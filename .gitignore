@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit credentials
+.env
+*.key
+service-account*.json
+
+# Runtime state (SQLite stores, traces, logs)
+.insight_data/
+*.db
+*.db-shm
+*.db-wal
+logs/

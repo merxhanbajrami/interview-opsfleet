@@ -1,0 +1,30 @@
+# Fallback for `pip install -r requirements.txt`.
+# The supported path is `uv sync` (see README); this file mirrors pyproject.toml
+# for reviewers who prefer pip.  Requires Python 3.11-3.13.
+
+# --- Orchestration ---------------------------------------------------------
+langgraph>=1.2.0,<2
+langgraph-checkpoint-sqlite>=3.1.0
+langchain-core>=1.6.0
+langchain-google-genai>=4.4.0
+
+# --- Data plane ------------------------------------------------------------
+google-cloud-bigquery>=3.45.0
+google-cloud-bigquery-storage>=2.27.0
+db-dtypes>=1.3.0
+pandas>=2.2.0
+
+# --- SQL parsing / rewriting (PII + row-scope enforcement) -----------------
+sqlglot>=30.0.0
+
+# --- Golden Bucket vector search (in-process, no extra infrastructure) -----
+sqlite-vec>=0.1.9
+
+# --- Config, CLI, resilience ----------------------------------------------
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-dotenv>=1.0.1
+rich>=13.9.0
+typer>=0.15.0
+tenacity>=9.0.0
+pyyaml>=6.0.2
