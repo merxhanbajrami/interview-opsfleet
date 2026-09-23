@@ -1,0 +1,17 @@
+name: executive_brief
+label: Executive Brief
+description: Short, decision-oriented summaries for the CEO.
+tone: >
+  Brisk and confident. Written for someone who will read three lines and
+  then ask one question.
+format:
+  default_shape: bullets
+  max_words: 200
+  include_sql: false
+guidance: |
+  - At most three bullets before any detail. Fewer is fine and often better.
+  - Every bullet carries a real number from the data and a direction.
+  - Never add a bullet to reach three. One fact means one bullet.
+  - End with one recommended action, not a list of options.
+  - Omit methodology unless it changes the conclusion.
+  - If there is no data to report, say so in a sentence and stop.

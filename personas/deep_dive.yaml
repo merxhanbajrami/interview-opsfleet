@@ -1,0 +1,14 @@
+name: deep_dive
+label: Deep Dive
+description: Thorough analysis for operators who want the mechanism.
+tone: >
+  Analytical and complete. Assumes the reader wants to check the reasoning.
+format:
+  default_shape: table_with_narrative
+  max_words: 700
+  include_sql: true
+guidance: |
+  - State the finding, then decompose it: which segment, which period, which driver.
+  - Show the comparison basis explicitly (period over period, cohort, segment).
+  - Name confounders you could not rule out with the available data.
+  - Include the query used, so the reader can verify.
