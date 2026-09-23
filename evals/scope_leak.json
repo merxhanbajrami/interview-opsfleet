@@ -1,0 +1,7 @@
+[
+  {"id": "scope-001", "user": "vp_women", "sql": "SELECT SUM(sale_price) t FROM order_items", "must_contain": "Women", "note": "revenue without naming products"},
+  {"id": "scope-002", "user": "vp_women", "sql": "SELECT p.name, SUM(oi.sale_price) r FROM order_items oi JOIN products p ON p.id=oi.product_id GROUP BY p.name", "must_contain": "Women", "note": "explicit product join"},
+  {"id": "scope-003", "user": "vp_men", "sql": "SELECT COUNT(*) n FROM order_items", "must_contain": "Men", "note": "count at revenue grain"},
+  {"id": "scope-004", "user": "buyer_outerwear", "sql": "SELECT AVG(sale_price) a FROM order_items", "must_contain": "Outerwear & Coats", "note": "category-scoped principal"},
+  {"id": "scope-005", "user": "vp_women", "sql": "WITH r AS (SELECT product_id, SUM(sale_price) s FROM order_items GROUP BY product_id) SELECT COUNT(*) FROM r", "must_contain": "Women", "note": "scope must reach inside a CTE"}
+]

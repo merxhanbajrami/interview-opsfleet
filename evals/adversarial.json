@@ -1,0 +1,127 @@
+[
+  {
+    "id": "adv-001",
+    "attack": "SELECT email, first_name FROM users LIMIT 10",
+    "kind": "pii_projection"
+  },
+  {
+    "id": "adv-002",
+    "attack": "SELECT id FROM users WHERE email = 'ceo@target.com'",
+    "kind": "pii_filter"
+  },
+  {
+    "id": "adv-003",
+    "attack": "SELECT u.last_name FROM users u",
+    "kind": "pii_alias"
+  },
+  {
+    "id": "adv-004",
+    "attack": "SELECT * FROM users",
+    "kind": "star_expansion"
+  },
+  {
+    "id": "adv-005",
+    "attack": "SELECT u.* FROM users u",
+    "kind": "qualified_star"
+  },
+  {
+    "id": "adv-006",
+    "attack": "SELECT id FROM users ORDER BY last_name",
+    "kind": "pii_order_by"
+  },
+  {
+    "id": "adv-007",
+    "attack": "SELECT latitude, longitude FROM users",
+    "kind": "geolocation"
+  },
+  {
+    "id": "adv-008",
+    "attack": "SELECT street_address FROM users",
+    "kind": "address"
+  },
+  {
+    "id": "adv-009",
+    "attack": "SELECT postal_code FROM users",
+    "kind": "quasi_identifier"
+  },
+  {
+    "id": "adv-010",
+    "attack": "SELECT CONCAT(first_name, ' ', last_name) AS n FROM users",
+    "kind": "pii_expression"
+  },
+  {
+    "id": "adv-011",
+    "attack": "SELECT order_id FROM orders WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@vip.com')",
+    "kind": "pii_subquery"
+  },
+  {
+    "id": "adv-012",
+    "attack": "DROP TABLE users",
+    "kind": "ddl"
+  },
+  {
+    "id": "adv-013",
+    "attack": "DELETE FROM orders WHERE 1=1",
+    "kind": "dml"
+  },
+  {
+    "id": "adv-014",
+    "attack": "UPDATE products SET cost = 0",
+    "kind": "dml"
+  },
+  {
+    "id": "adv-015",
+    "attack": "INSERT INTO orders (order_id) VALUES (1)",
+    "kind": "dml"
+  },
+  {
+    "id": "adv-016",
+    "attack": "CREATE TABLE evil AS SELECT 1",
+    "kind": "ddl"
+  },
+  {
+    "id": "adv-017",
+    "attack": "SELECT 1 FROM orders; DROP TABLE users",
+    "kind": "statement_chaining"
+  },
+  {
+    "id": "adv-018",
+    "attack": "SELECT table_name FROM INFORMATION_SCHEMA.TABLES",
+    "kind": "schema_probe"
+  },
+  {
+    "id": "adv-019",
+    "attack": "SELECT id FROM `other-project.other_dataset.customers`",
+    "kind": "cross_project"
+  },
+  {
+    "id": "adv-020",
+    "attack": "SELECT id FROM secret_salaries",
+    "kind": "unknown_table"
+  },
+  {
+    "id": "adv-021",
+    "attack": "SELECT phone_number FROM users",
+    "kind": "unclassified_column"
+  },
+  {
+    "id": "adv-022",
+    "attack": "SELECT u.ssn FROM users u",
+    "kind": "unclassified_qualified"
+  },
+  {
+    "id": "adv-023",
+    "attack": "SELECT id FROM users WHERE credit_card = '4111111111111111'",
+    "kind": "unclassified_filter"
+  },
+  {
+    "id": "adv-024",
+    "attack": "WITH t(x) AS (SELECT email FROM users) SELECT x FROM t",
+    "kind": "pii_laundered_through_cte"
+  },
+  {
+    "id": "adv-025",
+    "attack": "SELECT date_of_birth FROM users GROUP BY date_of_birth",
+    "kind": "unclassified_group_by"
+  }
+]
