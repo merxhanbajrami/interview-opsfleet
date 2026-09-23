@@ -1,0 +1,130 @@
+{
+  "fingerprint": "283284e89ba1f2d5",
+  "name": "monthly_revenue",
+  "sql": "SELECT\n  DATE_TRUNC(DATE(created_at), MONTH) AS month,\n  ROUND(SUM(sale_price), 2) AS revenue,\n  COUNT(DISTINCT order_id) AS orders\nFROM `bigquery-public-data.thelook_ecommerce.order_items`\nWHERE\n  status IN ('Complete', 'Shipped')\nGROUP BY\n  month\nORDER BY\n  month DESC\nLIMIT 24",
+  "rows": [
+    {
+      "month": "2026-09-01T00:00:00.000",
+      "revenue": 430112.18,
+      "orders": 4977
+    },
+    {
+      "month": "2026-08-01T00:00:00.000",
+      "revenue": 251249.54,
+      "orders": 3167
+    },
+    {
+      "month": "2026-07-01T00:00:00.000",
+      "revenue": 245124.78,
+      "orders": 2775
+    },
+    {
+      "month": "2026-06-01T00:00:00.000",
+      "revenue": 204891.22,
+      "orders": 2451
+    },
+    {
+      "month": "2026-05-01T00:00:00.000",
+      "revenue": 190382.27,
+      "orders": 2257
+    },
+    {
+      "month": "2026-04-01T00:00:00.000",
+      "revenue": 182497.18,
+      "orders": 2091
+    },
+    {
+      "month": "2026-03-01T00:00:00.000",
+      "revenue": 174227.08,
+      "orders": 2043
+    },
+    {
+      "month": "2026-02-01T00:00:00.000",
+      "revenue": 151685.78,
+      "orders": 1690
+    },
+    {
+      "month": "2026-01-01T00:00:00.000",
+      "revenue": 162629.14,
+      "orders": 1896
+    },
+    {
+      "month": "2025-12-01T00:00:00.000",
+      "revenue": 149671.93,
+      "orders": 1735
+    },
+    {
+      "month": "2025-11-01T00:00:00.000",
+      "revenue": 140100.46,
+      "orders": 1642
+    },
+    {
+      "month": "2025-10-01T00:00:00.000",
+      "revenue": 131875.6,
+      "orders": 1576
+    },
+    {
+      "month": "2025-09-01T00:00:00.000",
+      "revenue": 127115.19,
+      "orders": 1462
+    },
+    {
+      "month": "2025-08-01T00:00:00.000",
+      "revenue": 127461.8,
+      "orders": 1466
+    },
+    {
+      "month": "2025-07-01T00:00:00.000",
+      "revenue": 110675.27,
+      "orders": 1376
+    },
+    {
+      "month": "2025-06-01T00:00:00.000",
+      "revenue": 107543.53,
+      "orders": 1255
+    },
+    {
+      "month": "2025-05-01T00:00:00.000",
+      "revenue": 111191.81,
+      "orders": 1360
+    },
+    {
+      "month": "2025-04-01T00:00:00.000",
+      "revenue": 111783.48,
+      "orders": 1259
+    },
+    {
+      "month": "2025-03-01T00:00:00.000",
+      "revenue": 103506.46,
+      "orders": 1172
+    },
+    {
+      "month": "2025-02-01T00:00:00.000",
+      "revenue": 87054.78,
+      "orders": 1065
+    },
+    {
+      "month": "2025-01-01T00:00:00.000",
+      "revenue": 98671.38,
+      "orders": 1120
+    },
+    {
+      "month": "2024-12-01T00:00:00.000",
+      "revenue": 98592.96,
+      "orders": 1148
+    },
+    {
+      "month": "2024-11-01T00:00:00.000",
+      "revenue": 96772.19,
+      "orders": 1088
+    },
+    {
+      "month": "2024-10-01T00:00:00.000",
+      "revenue": 93036.43,
+      "orders": 1031
+    }
+  ],
+  "bytes_processed": 0,
+  "bytes_billed": 0,
+  "duration_ms": 5149.5
+}

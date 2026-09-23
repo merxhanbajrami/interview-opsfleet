@@ -1,0 +1,100 @@
+{
+  "fingerprint": "da33598d0515e2e9",
+  "name": "category_performance",
+  "sql": "SELECT\n  p.category,\n  COUNT(*) AS items_sold,\n  ROUND(SUM(oi.sale_price), 2) AS revenue,\n  ROUND(AVG(oi.sale_price - p.cost), 2) AS avg_margin\nFROM `bigquery-public-data.thelook_ecommerce.order_items` AS oi\nJOIN `bigquery-public-data.thelook_ecommerce.products` AS p\n  ON p.id = oi.product_id\nWHERE\n  oi.status IN ('Complete', 'Shipped')\nGROUP BY\n  p.category\nORDER BY\n  revenue DESC\nLIMIT 15",
+  "rows": [
+    {
+      "category": "Outerwear & Coats",
+      "items_sold": 5028,
+      "revenue": 734005.07,
+      "avg_margin": 81.07
+    },
+    {
+      "category": "Jeans",
+      "items_sold": 7114,
+      "revenue": 712549.42,
+      "avg_margin": 46.64
+    },
+    {
+      "category": "Sweaters",
+      "items_sold": 6024,
+      "revenue": 451888.95,
+      "avg_margin": 38.82
+    },
+    {
+      "category": "Swim",
+      "items_sold": 6312,
+      "revenue": 359428.77,
+      "avg_margin": 27.93
+    },
+    {
+      "category": "Suits & Sport Coats",
+      "items_sold": 2836,
+      "revenue": 359242.14,
+      "avg_margin": 75.75
+    },
+    {
+      "category": "Fashion Hoodies & Sweatshirts",
+      "items_sold": 6569,
+      "revenue": 357284.18,
+      "avg_margin": 26.11
+    },
+    {
+      "category": "Sleep & Lounge",
+      "items_sold": 6081,
+      "revenue": 301821.3,
+      "avg_margin": 25.61
+    },
+    {
+      "category": "Shorts",
+      "items_sold": 6209,
+      "revenue": 291519.21,
+      "avg_margin": 23.45
+    },
+    {
+      "category": "Tops & Tees",
+      "items_sold": 6706,
+      "revenue": 280123.97,
+      "avg_margin": 18.38
+    },
+    {
+      "category": "Dresses",
+      "items_sold": 3031,
+      "revenue": 258851.99,
+      "avg_margin": 46.96
+    },
+    {
+      "category": "Active",
+      "items_sold": 4946,
+      "revenue": 252934.7,
+      "avg_margin": 29.72
+    },
+    {
+      "category": "Intimates",
+      "items_sold": 7420,
+      "revenue": 252180.57,
+      "avg_margin": 15.9
+    },
+    {
+      "category": "Pants",
+      "items_sold": 3971,
+      "revenue": 235177.71,
+      "avg_margin": 32.0
+    },
+    {
+      "category": "Accessories",
+      "items_sold": 5463,
+      "revenue": 226831.84,
+      "avg_margin": 24.87
+    },
+    {
+      "category": "Blazers & Jackets",
+      "items_sold": 1757,
+      "revenue": 158044.91,
+      "avg_margin": 55.68
+    }
+  ],
+  "bytes_processed": 0,
+  "bytes_billed": 0,
+  "duration_ms": 4709.3
+}

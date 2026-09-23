@@ -1,0 +1,13 @@
+{
+  "fingerprint": "905062cbc369318b",
+  "name": "womenswear_revenue",
+  "sql": "SELECT\n  ROUND(SUM(sale_price), 2) AS total_revenue\nFROM (\n  SELECT\n    __oi.*\n  FROM `bigquery-public-data.thelook_ecommerce.order_items` AS __oi\n  WHERE\n    __oi.product_id IN (\n      SELECT\n        __p.id\n      FROM `bigquery-public-data.thelook_ecommerce.products` AS __p\n      WHERE\n        __p.department IN ('Women')\n    )\n) AS order_items\nWHERE\n  status IN ('Complete', 'Shipped')\nLIMIT 1000",
+  "rows": [
+    {
+      "total_revenue": 2778452.51
+    }
+  ],
+  "bytes_processed": 0,
+  "bytes_billed": 0,
+  "duration_ms": 4960.5
+}

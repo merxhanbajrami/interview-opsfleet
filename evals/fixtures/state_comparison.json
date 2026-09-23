@@ -1,0 +1,22 @@
+{
+  "fingerprint": "11572630caca5cd6",
+  "name": "state_comparison",
+  "sql": "SELECT\n  u.state,\n  COUNT(DISTINCT u.id) AS customers,\n  ROUND(SUM(oi.sale_price), 2) AS revenue,\n  ROUND(AVG(oi.sale_price), 2) AS avg_item_price\nFROM `bigquery-public-data.thelook_ecommerce.order_items` AS oi\nJOIN `bigquery-public-data.thelook_ecommerce.users` AS u\n  ON u.id = oi.user_id\nWHERE\n  oi.status IN ('Complete', 'Shipped') AND u.state IN ('California', 'New York')\nGROUP BY\n  u.state\nLIMIT 1000",
+  "rows": [
+    {
+      "state": "California",
+      "customers": 1944,
+      "revenue": 226559.8,
+      "avg_item_price": 61.62
+    },
+    {
+      "state": "New York",
+      "customers": 705,
+      "revenue": 85409.98,
+      "avg_item_price": 62.12
+    }
+  ],
+  "bytes_processed": 0,
+  "bytes_billed": 0,
+  "duration_ms": 4868.7
+}

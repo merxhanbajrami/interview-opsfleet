@@ -1,0 +1,9 @@
+{
+  "fingerprint": "f5452ea3ef60ec6f",
+  "name": "empty_grouped",
+  "sql": "SELECT\n  status,\n  ROUND(SUM(sale_price), 2) AS revenue\nFROM `bigquery-public-data.thelook_ecommerce.order_items`\nWHERE\n  status = 'NoSuchStatus'\nGROUP BY\n  status\nLIMIT 1000",
+  "rows": [],
+  "bytes_processed": 3309949,
+  "bytes_billed": 10485760,
+  "duration_ms": 5253.7
+}

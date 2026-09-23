@@ -1,0 +1,35 @@
+{
+  "fingerprint": "8616507d49fd08ab",
+  "name": "channel_revenue",
+  "sql": "SELECT\n  u.traffic_source,\n  COUNT(DISTINCT u.id) AS customers,\n  ROUND(SUM(oi.sale_price), 2) AS revenue\nFROM `bigquery-public-data.thelook_ecommerce.order_items` AS oi\nJOIN `bigquery-public-data.thelook_ecommerce.users` AS u\n  ON u.id = oi.user_id\nWHERE\n  oi.status IN ('Complete', 'Shipped')\nGROUP BY\n  u.traffic_source\nORDER BY\n  revenue DESC\nLIMIT 1000",
+  "rows": [
+    {
+      "traffic_source": "Search",
+      "customers": 36963,
+      "revenue": 4172310.78
+    },
+    {
+      "traffic_source": "Organic",
+      "customers": 7968,
+      "revenue": 913009.01
+    },
+    {
+      "traffic_source": "Facebook",
+      "customers": 3182,
+      "revenue": 358497.84
+    },
+    {
+      "traffic_source": "Email",
+      "customers": 2702,
+      "revenue": 307146.96
+    },
+    {
+      "traffic_source": "Display",
+      "customers": 2161,
+      "revenue": 233784.28
+    }
+  ],
+  "bytes_processed": 0,
+  "bytes_billed": 0,
+  "duration_ms": 5474.7
+}
