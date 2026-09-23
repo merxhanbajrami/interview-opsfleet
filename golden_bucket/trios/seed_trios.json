@@ -1,0 +1,74 @@
+[
+  {
+    "id": "gt-001",
+    "question": "What was our monthly revenue over the last year?",
+    "sql": "SELECT DATE_TRUNC(DATE(oi.created_at), MONTH) AS month,\n       ROUND(SUM(oi.sale_price), 2) AS revenue,\n       COUNT(DISTINCT oi.order_id) AS orders\nFROM order_items oi\nWHERE oi.status IN ('Complete', 'Shipped')\n  AND DATE(oi.created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH)\nGROUP BY month\nORDER BY month",
+    "insight": "Realised revenue counts Complete and Shipped lines only. Cancelled and Returned lines are excluded because they never became cash. We report the order count alongside revenue so a change can be attributed to volume or to basket size rather than left ambiguous.",
+    "tags": ["revenue", "monthly", "trend", "time-series"],
+    "author": "analytics-team",
+    "created_at": "2025-01-14T09:00:00Z"
+  },
+  {
+    "id": "gt-002",
+    "question": "Who are our top customers by total spend?",
+    "sql": "SELECT oi.user_id,\n       ROUND(SUM(oi.sale_price), 2) AS lifetime_spend,\n       COUNT(DISTINCT oi.order_id) AS orders,\n       ROUND(SUM(oi.sale_price) / COUNT(DISTINCT oi.order_id), 2) AS avg_order_value\nFROM order_items oi\nWHERE oi.status IN ('Complete', 'Shipped')\nGROUP BY oi.user_id\nORDER BY lifetime_spend DESC\nLIMIT 20",
+    "insight": "Rank on realised spend, never on order count: a customer with many small orders is a different commercial proposition from one with few large ones, so we return average order value in the same result to make that distinction visible. Customer identity is reported as a pseudonym.",
+    "tags": ["customer", "top", "spend", "ranking", "ltv"],
+    "author": "analytics-team",
+    "created_at": "2025-01-20T09:00:00Z"
+  },
+  {
+    "id": "gt-003",
+    "question": "Why are customers in one state spending less than another?",
+    "sql": "SELECT u.state,\n       COUNT(DISTINCT u.id) AS customers,\n       ROUND(SUM(oi.sale_price), 2) AS revenue,\n       ROUND(SUM(oi.sale_price) / COUNT(DISTINCT u.id), 2) AS revenue_per_customer,\n       ROUND(AVG(oi.sale_price), 2) AS avg_item_price,\n       ROUND(COUNT(*) / COUNT(DISTINCT oi.order_id), 2) AS items_per_order\nFROM order_items oi\nJOIN users u ON u.id = oi.user_id\nWHERE oi.status IN ('Complete', 'Shipped')\n  AND u.state IN ('California', 'New York')\nGROUP BY u.state\nORDER BY revenue_per_customer DESC",
+    "insight": "An underspending question is always decomposed, never answered with one total. Revenue per customer splits into average item price times items per order; whichever of the two differs is the real finding. A state total alone confounds spend with population and is not an answer.",
+    "tags": ["state", "region", "comparison", "underspending", "why", "segment"],
+    "author": "analytics-team",
+    "created_at": "2025-02-03T09:00:00Z"
+  },
+  {
+    "id": "gt-004",
+    "question": "Compare the performance of two product categories and explain the difference",
+    "sql": "SELECT p.category,\n       COUNT(DISTINCT oi.order_id) AS orders,\n       ROUND(SUM(oi.sale_price), 2) AS revenue,\n       ROUND(AVG(oi.sale_price), 2) AS avg_sale_price,\n       ROUND(AVG(p.retail_price), 2) AS avg_list_price,\n       ROUND(AVG(oi.sale_price - p.cost), 2) AS avg_margin,\n       ROUND(SUM(CASE WHEN oi.returned_at IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*), 4) AS return_rate\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nGROUP BY p.category\nORDER BY revenue DESC",
+    "insight": "Category comparison needs margin and return rate beside revenue. A category can lead on revenue while losing money once returns and cost are counted, and that inversion is usually the point of the question. The gap between list price and realised sale price shows how much discounting the revenue figure required.",
+    "tags": ["product", "category", "comparison", "performance", "margin", "returns"],
+    "author": "analytics-team",
+    "created_at": "2025-02-11T09:00:00Z"
+  },
+  {
+    "id": "gt-005",
+    "question": "Why did our churn rate spike last month?",
+    "sql": "WITH first_order AS (\n  SELECT user_id, MIN(DATE(created_at)) AS cohort_date\n  FROM order_items\n  WHERE status IN ('Complete', 'Shipped')\n  GROUP BY user_id\n),\nmonthly_active AS (\n  SELECT DISTINCT user_id, DATE_TRUNC(DATE(created_at), MONTH) AS active_month\n  FROM order_items\n  WHERE status IN ('Complete', 'Shipped')\n)\nSELECT DATE_TRUNC(f.cohort_date, MONTH) AS cohort_month,\n       COUNT(DISTINCT f.user_id) AS cohort_size,\n       COUNT(DISTINCT CASE WHEN m.active_month > DATE_TRUNC(f.cohort_date, MONTH)\n                           THEN m.user_id END) AS returned,\n       ROUND(1 - COUNT(DISTINCT CASE WHEN m.active_month > DATE_TRUNC(f.cohort_date, MONTH)\n                                     THEN m.user_id END)\n                 / COUNT(DISTINCT f.user_id), 4) AS churn_rate\nFROM first_order f\nLEFT JOIN monthly_active m ON m.user_id = f.user_id\nGROUP BY cohort_month\nORDER BY cohort_month DESC\nLIMIT 18",
+    "insight": "Churn is only meaningful by acquisition cohort. A month-over-month churn number moves whenever acquisition volume moves, so a spike usually reflects a large low-quality cohort acquired earlier rather than any change in customer behaviour. Always check cohort size before concluding that retention worsened.",
+    "tags": ["churn", "retention", "cohort", "spike", "why"],
+    "author": "analytics-team",
+    "created_at": "2025-03-02T09:00:00Z"
+  },
+  {
+    "id": "gt-006",
+    "question": "Which products are underperforming relative to their list price?",
+    "sql": "SELECT p.name,\n       p.category,\n       p.brand,\n       ROUND(p.retail_price, 2) AS list_price,\n       ROUND(AVG(oi.sale_price), 2) AS avg_realised,\n       ROUND(1 - AVG(oi.sale_price) / NULLIF(p.retail_price, 0), 4) AS discount_depth,\n       COUNT(*) AS units_sold\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nWHERE oi.status IN ('Complete', 'Shipped')\nGROUP BY p.name, p.category, p.brand, p.retail_price\nHAVING units_sold >= 20\nORDER BY discount_depth DESC\nLIMIT 25",
+    "insight": "Underperformance means realised price well below list, not low revenue. A minimum unit threshold is essential: without it the result fills with one-off sales whose discount depth is noise rather than a pricing problem.",
+    "tags": ["product", "pricing", "discount", "underperforming", "margin"],
+    "author": "analytics-team",
+    "created_at": "2025-03-18T09:00:00Z"
+  },
+  {
+    "id": "gt-007",
+    "question": "How does revenue break down by acquisition channel?",
+    "sql": "SELECT u.traffic_source,\n       COUNT(DISTINCT u.id) AS customers,\n       ROUND(SUM(oi.sale_price), 2) AS revenue,\n       ROUND(SUM(oi.sale_price) / COUNT(DISTINCT u.id), 2) AS revenue_per_customer,\n       ROUND(COUNT(DISTINCT oi.order_id) / COUNT(DISTINCT u.id), 2) AS orders_per_customer\nFROM order_items oi\nJOIN users u ON u.id = oi.user_id\nWHERE oi.status IN ('Complete', 'Shipped')\nGROUP BY u.traffic_source\nORDER BY revenue DESC",
+    "insight": "Channel revenue is reported per customer as well as in total, because the largest channel by volume is frequently the weakest by customer value. Acquisition decisions follow revenue per customer, not channel share.",
+    "tags": ["channel", "traffic", "acquisition", "marketing", "segment"],
+    "author": "analytics-team",
+    "created_at": "2025-04-07T09:00:00Z"
+  },
+  {
+    "id": "gt-008",
+    "question": "What is our return rate and which categories drive it?",
+    "sql": "SELECT p.category,\n       COUNT(*) AS items_sold,\n       SUM(CASE WHEN oi.returned_at IS NOT NULL THEN 1 ELSE 0 END) AS items_returned,\n       ROUND(SUM(CASE WHEN oi.returned_at IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*), 4) AS return_rate,\n       ROUND(SUM(CASE WHEN oi.returned_at IS NOT NULL THEN oi.sale_price ELSE 0 END), 2) AS returned_value\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nGROUP BY p.category\nHAVING items_sold >= 50\nORDER BY return_rate DESC",
+    "insight": "Return rate is ranked alongside returned value because a high rate on a cheap category costs less than a moderate rate on an expensive one. Acting on the rate alone sends the merchandising team to the wrong category.",
+    "tags": ["returns", "return-rate", "category", "quality"],
+    "author": "analytics-team",
+    "created_at": "2025-04-22T09:00:00Z"
+  }
+]
