@@ -1,14 +1,9 @@
 """The data-plane contract.
 
-Every component above this line talks to a ``QueryExecutor``, never to
-BigQuery directly.  That buys three things:
-
-* the eval harness replays recorded fixtures, so evaluation is deterministic
-  and costs nothing;
-* a second warehouse (Snowflake, Postgres, DuckDB) is a new implementation
-  rather than a change to the agent;
-* failure modes are normalised, so the graph reasons about
-  ``QuerySyntaxError`` instead of a vendor-specific exception hierarchy.
+Everything above this line talks to a QueryExecutor, never to BigQuery
+directly. That lets the eval harness replay fixtures, makes a second
+warehouse an implementation rather than a change to the agent, and normalises
+vendor errors into a taxonomy the graph can branch on.
 """
 
 from __future__ import annotations
@@ -51,7 +46,7 @@ class QueryCostError(QueryError):
 class QueryPermissionError(QueryError):
     """Authentication or authorisation failure.
 
-    Neither retryable nor repairable — retrying wastes time and money.
+    Neither retryable nor repairable. Retrying wastes time and money.
     """
 
 

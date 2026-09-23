@@ -1,31 +1,15 @@
 """Saved reports, and the confirmation flow for deleting them.
 
-Requirement 3 asks for a strict confirmation before a destructive action, and
-for that confirmation not to damage the user experience.  The tension is real:
-a modal "are you sure?" on every request is strict but tiresome, and a
-free-text "yes" that the model interprets is pleasant but not strict at all.
+A modal "are you sure?" on every request is strict but tiresome; a free-text
+"yes" the model interprets is pleasant but not strict. The resolution is to
+split the action across two nodes with a graph interrupt between them.
 
-The resolution is to split the action across two nodes with a graph interrupt
-between them:
+deletion_preview resolves the phrase into an explicit, ownership-filtered
+list and deletes nothing. deletion_confirm begins with interrupt().
 
-``deletion_preview`` resolves the phrase into an explicit, ownership-filtered
-list of reports and puts it in state.  Nothing is deleted.  If the phrase
-matches nothing, the turn ends there and the user is simply told so — no
-confirmation prompt for a no-op.
-
-``deletion_confirm`` begins with ``interrupt()``.  The graph stops, the exact
-list is shown, and the conversation state is checkpointed to SQLite.  The
-process can restart between the question and the answer and the pending
-deletion survives.  Only an explicit approval resumes it.
-
-Two details make this correct rather than merely nice:
-
-* ``interrupt()`` re-executes its node from the top when resumed.  Everything
-  before the ``interrupt`` call therefore runs twice.  That is why resolution
-  lives in the *previous* node and why ``interrupt`` is the first statement
-  here — nothing with a side effect runs before it.
-* The confirmed set is the one the user was shown, read back from state.  A
-  report created between the preview and the approval is not swept up by it.
+interrupt() re-executes its node from the top on resume, so everything before
+the call runs twice. That is why resolution lives in the previous node and
+why apply_deletion is idempotent.
 """
 
 from __future__ import annotations
@@ -97,7 +81,7 @@ def make_report_composer(services: Services) -> Callable[[AgentState], dict[str,
         return {
             "analysis": body,
             "saved_report_id": report.id,
-            "warnings": [f"Saved as report {report.id[:8]} — \"{title}\"."],
+            "warnings": [f"Saved as report {report.id[:8]}: \"{title}\"."],
         }
 
     return report_composer
@@ -239,7 +223,7 @@ def make_deletion_confirm(services: Services) -> Callable[[AgentState], dict[str
             "deletion_outcome": "applied",
             "answer": (
                 f"Deleted {count} report{'s' if count != 1 else ''}. "
-                f"They are recoverable — say \"restore batch "
+                f"They are recoverable. Say \"restore batch "
                 f"{batch.batch_id[:8]}\" if that was a mistake."
             ),
         }

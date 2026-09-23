@@ -2,7 +2,7 @@
 
 The important assertion here is the asymmetry: a column the catalog invented
 breaks queries and must fail the check, while a column the warehouse grew that
-nobody has classified is safe — it is blocked by default — and must only be
+nobody has classified is safe, because it is blocked by default, and must
 reported.
 """
 

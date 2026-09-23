@@ -1,26 +1,15 @@
 """Static analysis and rewriting of model-generated SQL.
 
-This module is the enforcement point for requirement 2.  A prompt instruction
-telling the model not to select ``users.email`` is a request, not a control:
-it fails against prompt injection, against model error, and against any future
-change to the prompt.  This guard parses the generated SQL into an abstract
-syntax tree and decides on structure, so a query that would expose personal
-data never reaches BigQuery.
+A prompt telling the model not to select users.email is a request, not a
+control. This guard parses generated SQL into an AST and decides on
+structure, so a query that would expose personal data never reaches BigQuery.
 
-The guard both **rejects** and **rewrites**:
+It both rejects and rewrites. Rewriting matters as much: the caller's
+entitlement is applied by transforming the query tree, so the model cannot
+omit a filter it was never responsible for writing.
 
-* Rejects  — DML and DDL, unknown tables, blocked columns, ``SELECT *``,
-  multiple statements.
-* Rewrites — qualifies bare table names, injects the caller's product scope,
-  and clamps the row limit.
-
-Rewriting matters as much as rejection.  The caller's entitlement is applied
-by transforming the query tree, not by asking the model to add a ``WHERE``
-clause.  The model cannot omit a filter it was never responsible for writing.
-
-Production note: at scale this control belongs in the warehouse — BigQuery
-authorized views or row-level access policies — so that it holds even if the
-application is compromised.  See DESIGN.md.
+At scale this control belongs in the warehouse, as authorized views or
+row-level policies. See DESIGN.md.
 """
 
 from __future__ import annotations
@@ -220,21 +209,13 @@ class SqlGuard:
     def _check_columns(self, tree: exp.Expression, cte_names: set[str]) -> list[str]:
         """Allow only catalogued columns. Everything else is rejected.
 
-        This is an allowlist, not a denylist, and the difference matters. A
-        denylist is correct only while the catalog is exhaustive — the moment
-        a column is added upstream, a denylist silently permits it. An
-        allowlist means an unclassified column is unreachable until someone
-        classifies it, so the window between a schema change and its review
-        is safe by default rather than safe by luck.
+        An allowlist, not a denylist. A denylist is correct only while the
+        catalog is exhaustive, so a column added upstream would be silently
+        permitted. Here it is unreachable until someone classifies it.
 
-        Blocked columns get a specific message because the user deserves a
-        real reason; unknown columns get a different one because the usual
-        cause is the model inventing a plausible name, and saying so gives
-        the repair step something to work with.
-
-        Both are checked in filters and joins as well as in the projection.
+        Checked in filters and joins as well as the projection, because
         ``WHERE email = 'x@y.com'`` returns no personal column but reveals
-        whether one specific named person is a customer.
+        whether one named person is a customer.
         """
         aliases = self._table_aliases(tree, cte_names)
         # Names the query itself introduces: `SUM(x) AS total`, and any
@@ -286,8 +267,8 @@ class SqlGuard:
         for alias in tree.find_all(exp.Alias):
             if alias.alias:
                 names.add(alias.alias.lower())
-        # An explicit CTE column list — `WITH t(pid, total) AS (...)` — hangs
-        # off the CTE's TableAlias, not off the CTE itself.
+        # `WITH t(pid, total) AS (...)` hangs the column list off the CTE's
+        # TableAlias, not off the CTE itself.
         for cte in tree.find_all(exp.CTE):
             table_alias = cte.args.get("alias")
             columns = table_alias.args.get("columns") if table_alias else None

@@ -4,17 +4,17 @@
 Three suites, because "is the agent good?" is three different questions with
 three different failure modes.
 
-**Security** — does the guard hold?  Twenty adversarial queries that must be
+**Security**: does the guard hold? Twenty-five adversarial queries that must be
 rejected, and five scope cases that must be rewritten.  This suite has a hard
 pass bar: one leak is a release blocker, because the cost of a PII disclosure
 is not traded off against answer quality.  It needs no model and no warehouse,
 so it runs on every commit in CI.
 
-**Routing** — does the agent do the right *kind* of thing?  Fifteen questions
+**Routing**: does the agent do the right *kind* of thing? Fifteen questions
 with a known intent. Misrouting is cheap to measure and expensive in
 production: a deletion classified as analysis is a silent failure.
 
-**Trajectory** — given a question, does the generated SQL reference the right
+**Trajectory**: given a question, does the generated SQL reference the right
 tables, group by the right dimension, and aggregate the right column?  This is
 the part that needs a live model. It is scored structurally rather than by
 string match, because there are many correct queries for one question and
@@ -103,7 +103,7 @@ def run_security() -> Suite:
                 id=record["id"],
                 name=f"{record['kind']}: blocked",
                 passed=not result.ok,
-                detail="LEAKED — query was accepted" if result.ok else result.reason()[:90],
+                detail="LEAKED: query was accepted" if result.ok else result.reason()[:90],
             )
         )
 
@@ -204,8 +204,8 @@ def run_trajectory() -> Suite:
     started = time.perf_counter()
     import sqlglot
 
-    from insight_agent.graph.prompts import sql_prompt, sql_system
     from insight_agent.golden.retriever import GoldenBucket
+    from insight_agent.graph.prompts import sql_prompt, sql_system
     from insight_agent.llm.client import LLMClient
 
     settings = get_settings()

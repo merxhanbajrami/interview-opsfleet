@@ -56,7 +56,7 @@ class AgentState(TypedDict, total=False):
     #: Every failed attempt, kept so a repair prompt can avoid repeating one.
     #: Deliberately NOT an accumulating reducer. A successful execution has to
     #: be able to clear it, and with `operator.add` returning [] appends
-    #: nothing instead of resetting — which would leave a stale failure in
+    #: nothing instead of resetting, which would leave a stale failure in
     #: state and send a query that already succeeded back into the repair
     #: cycle. Nodes append explicitly instead.
     sql_failures: list[dict[str, str]]

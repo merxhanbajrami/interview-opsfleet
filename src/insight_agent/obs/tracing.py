@@ -1,18 +1,10 @@
 """Structured tracing.
 
-Requirement 7 has two halves and they need different things.  Knowing *that*
-the agent is failing needs counters and timings.  Knowing *why* needs the full
-message correspondence for one specific conversation turn — every prompt, every
-generated query, every guard decision, every retry, in order.
+Knowing that the agent is failing needs counters. Knowing why needs the full
+message correspondence for one turn, so every turn gets a trace_id and every
+node emits ordered events under it.
 
-So every turn gets a ``trace_id``, and every node emits ordered events under
-it.  The events go to two places: a JSON-lines file, which is what a log
-shipper would tail into Cloud Logging, and a SQLite table, which is what the
-``insight trace`` command reads for replay.  In production the same event
-stream feeds OpenTelemetry spans; the emitter here is deliberately the only
-place that knows the difference.
-
-Payloads are scrubbed before they are written.  A trace store that accumulates
+Payloads are scrubbed before they are written. A trace store that accumulates
 personal data is a second copy of the problem the guard exists to prevent.
 """
 

@@ -1,13 +1,8 @@
 """Everything the graph nodes depend on, assembled once.
 
-Nodes are closures over a ``Services`` instance rather than modules that
-import their own dependencies.  That is what makes the graph testable: a test
-constructs ``Services`` with a recorded executor and a stub model, and the same
-node code runs with no network and no warehouse.
-
-Construction is lazy where it can fail.  A missing BigQuery credential should
-produce a clear message on the first data question, not a stack trace at
-import time that hides every other reason the process would not start.
+Nodes are closures over a Services instance, which is what makes the graph
+testable: a test builds Services with a recorded executor and a stub model,
+and the same node code runs with no network.
 """
 
 from __future__ import annotations

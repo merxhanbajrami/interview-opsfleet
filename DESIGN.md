@@ -1,4 +1,4 @@
-# Insight Agent — High-Level Design
+# Insight Agent: High-Level Design
 
 A conversational data-analysis agent for retail executives. It answers
 questions about sales, inventory and performance in natural language, runs the
@@ -36,81 +36,9 @@ assumed.
 
 ## 2. Production architecture
 
-```mermaid
-graph TB
-    subgraph client["Client"]
-        CLI["CLI chat<br/><i>prototype</i>"]
-        WEB["Web app<br/><i>future</i>"]
-        SLACK["Slack bot<br/><i>future</i>"]
-    end
+![Production architecture](docs/architecture.drawio.png)
 
-    subgraph edge["Edge"]
-        LB["Cloud Load Balancing<br/>+ Cloud Armor"]
-        IAP["Identity-Aware Proxy<br/>OIDC · group claims"]
-    end
-
-    subgraph compute["Compute — Cloud Run"]
-        API["Agent API<br/>FastAPI · autoscaled"]
-        GRAPH["LangGraph runtime<br/>stateful DAG"]
-        WORKER["Async workers<br/>Cloud Tasks<br/><i>long reports, email</i>"]
-    end
-
-    subgraph guards["Policy layer — in-process, synchronous"]
-        IG["Input guard<br/>injection · scope"]
-        SG["SQL guard<br/>AST validation<br/>PII denial<br/>scope rewrite"]
-        OG["Output guard<br/>pseudonymise · redact"]
-    end
-
-    subgraph intel["Intelligence"]
-        LLM["LLM provider<br/>Vertex AI / Bedrock /<br/>direct API"]
-        GB["Golden Bucket<br/>GCS + Vector Search"]
-        PROMPT["Persona store<br/>Firestore · versioned"]
-    end
-
-    subgraph data["Data"]
-        BQ[("BigQuery<br/>thelook_ecommerce<br/><i>read-only</i>")]
-        PG[("Cloud SQL / Postgres<br/>reports · prefs · audit<br/>checkpoints")]
-        REDIS[("Memorystore<br/>schema + result cache")]
-    end
-
-    subgraph obs["Observability"]
-        TRACE["Cloud Trace<br/>OpenTelemetry"]
-        LOG["Cloud Logging<br/>structured events"]
-        MON["Cloud Monitoring<br/>dashboards · alerts"]
-    end
-
-    CLI --> LB
-    WEB --> LB
-    SLACK --> LB
-    LB --> IAP
-    IAP -->|"principal + entitlements"| API
-    API --> GRAPH
-
-    GRAPH --> IG
-    GRAPH --> SG
-    GRAPH --> OG
-
-    GRAPH <-->|"generate · interpret"| LLM
-    GRAPH -->|"retrieve precedent"| GB
-    GRAPH -->|"load persona"| PROMPT
-
-    SG -->|"validated + scoped SQL"| BQ
-    GRAPH <-->|"state · reports · audit"| PG
-    GRAPH <--> REDIS
-    GRAPH --> WORKER
-
-    GRAPH -.->|"spans"| TRACE
-    GRAPH -.->|"events"| LOG
-    LOG --> MON
-    TRACE --> MON
-
-    classDef guard fill:#ffe8e8,stroke:#c0392b,stroke-width:2px
-    classDef store fill:#e8f4ff,stroke:#2980b9
-    classDef brain fill:#f0e8ff,stroke:#8e44ad
-    class IG,SG,OG guard
-    class BQ,PG,REDIS store
-    class LLM,GB,PROMPT brain
-```
+*Editable source: [`docs/architecture.drawio`](docs/architecture.drawio). Open it at [app.diagrams.net](https://app.diagrams.net) or with the draw.io VS Code extension.*
 
 The policy layer is drawn separately because it is the load-bearing part.
 Everything else can be swapped; those three boxes are why the system is safe
@@ -136,62 +64,42 @@ on a reviewer's machine with no services to start.
 
 ## 3. The agent graph
 
-This is the compiled graph, generated from the running code rather than drawn
-by hand.
+The compiled graph has 21 nodes and 31 edges. It is a directed graph with
+branches and one bounded cycle, not a chain.
 
-```mermaid
-graph TD
-    START([start]) --> IG[input_guard]
-    IG --> PL[preference_learner]
-    PL --> R{router}
+**The router sends each turn down one branch:**
 
-    R -->|analysis| GB[golden_retriever]
-    R -->|schema| SA[schema_agent]
-    R -->|delete| DP[deletion_preview]
-    R -->|list_reports| LR[list_reports]
-    R -->|followup| FU[followup]
-    R -->|refused| RF[refusal]
+| Intent | Path |
+|---|---|
+| `analysis` | `golden_retriever` to `sql_generator` to `sql_guard` |
+| `schema` | `schema_agent`, no warehouse access |
+| `followup` | `followup`, discusses the previous result, no new query |
+| `list_reports` | `list_reports`, a plain function with no model call |
+| `delete` | `deletion_preview`, then a confirmation interrupt |
+| `refused` | `refusal` |
 
-    GB --> SG[sql_generator]
-    SG --> GUARD{sql_guard}
+**The analysis branch then routes on outcome:**
 
-    GUARD -->|valid| EX{executor}
-    GUARD -->|violations| REP[sql_repair]
-    GUARD -->|attempts spent| GU[give_up]
+| Node | Outcome | Next |
+|---|---|---|
+| `sql_guard` | valid | `executor` |
+| `sql_guard` | violations, attempts remain | `sql_repair` |
+| `sql_guard` | attempts spent | `give_up` |
+| `executor` | rows, or empty | `analyst` |
+| `executor` | repairable error | `sql_repair` |
+| `executor` | terminal error | `give_up` |
+| `sql_repair` | always | `sql_guard`, never straight to execution |
+| `analyst` | report requested | `report_composer` |
+| `analyst` | otherwise | `formatter` |
 
-    EX -->|rows or empty| AN[analyst]
-    EX -->|repairable error| REP
-    EX -->|terminal error| GU
-
-    REP -->|re-validate| GUARD
-
-    AN -->|report requested| RC[report_composer]
-    AN -->|otherwise| FMT[formatter]
-    RC --> FMT
-    SA --> FMT
-    FU --> FMT
-
-    DP -->|matches found| DC[/"deletion_confirm<br/>⏸ interrupt"/]
-    DP -->|nothing matched| OG
-    DC --> OG[output_guard]
-
-    LR --> OG
-    RF --> OG
-    GU --> OG
-    FMT --> OG
-    OG --> END([end])
-
-    classDef guard fill:#ffe8e8,stroke:#c0392b,stroke-width:2px
-    classDef pause fill:#fff4d6,stroke:#d68910,stroke-width:2px
-    class IG,GUARD,OG guard
-    class DC pause
-```
+Every branch converges on `output_guard`, and `END` is reachable from nowhere
+else.
 
 Three properties of this shape are deliberate.
 
 **It branches.** A schema question never pays for SQL generation; a deletion
 never touches the warehouse. In a linear chain every turn runs every step and
-the irrelevant ones are told to do nothing — which costs latency and tokens on
+the irrelevant ones are told to do nothing, which costs latency and tokens on
 every request.
 
 **It has exactly one cycle, and it is bounded.** `sql_repair` routes back to
@@ -201,19 +109,17 @@ the first attempt. The bound lives in the routing function
 (`route_after_guard`, `route_after_execute`), not inside a node, because an
 early return inside a node could skip it.
 
-**Every path converges on `output_guard`.** `END` is reachable from nowhere
-else. A branch added later inherits the final scrub automatically rather than
-depending on whoever adds it remembering to.
+**Every path converges on `output_guard`.** A branch added later inherits the
+final scrub automatically rather than depending on whoever adds it remembering
+to.
 
 ### When an agent is the wrong tool here
 
 Not every turn needs one. `list_reports` and `deletion_preview` are
 deterministic functions with no model call. The agent's judgement is used for
-the three things that genuinely need it — deciding what the question means,
+the three things that genuinely need it: deciding what the question means,
 writing the query, and explaining the result. Everything else is a function,
 because a function is cheaper, faster and testable.
-
----
 
 ## 4. Technology choices
 
@@ -224,13 +130,13 @@ Chosen for one capability that the alternatives do not have natively:
 
 Requirement 3 needs the agent to stop mid-execution, surface a confirmation,
 survive a process restart, and resume exactly where it paused. In LangGraph
-that is `interrupt()` plus a checkpointer — the state is already persisted, so
+that is `interrupt()` plus a checkpointer. The state is already persisted, so
 resumption is free. In a plain chain framework it means building a state
 machine, a persistence layer and a resume protocol by hand, which is a
 meaningful amount of code whose failure mode is a half-applied delete.
 
 The second reason is the shape. LangGraph's `StateGraph` makes the branch
-structure and the bounded cycle explicit and inspectable — the diagram in §3
+structure and the bounded cycle explicit and inspectable, so the diagram in §3
 is generated from the compiled graph, so it cannot drift from the code.
 
 Third, per-node `RetryPolicy` with jittered exponential backoff and per-node
@@ -280,7 +186,7 @@ available. The chain stepped down and completed the turn with
 
 That test also exposed a design error worth recording: the circuit breaker
 was keyed per *provider*. Exhausting the primary model's quota therefore
-opened the circuit for the fallback model too — so the fallback path could
+opened the circuit for the fallback model too, so the fallback path could
 never fire in exactly the circumstance it was built for. Breakers are now per
 model. A quota error also skips the retry budget entirely, because a daily
 quota does not refill in eight seconds and only a different model can help.
@@ -308,8 +214,8 @@ the graph can reason about.
 ### Application state: Postgres in production, SQLite in the prototype
 
 Reports, preferences, audit log, traces and LangGraph checkpoints share one
-database. They are written together and read together — a saved report and its
-audit row must commit atomically — so splitting them across stores would buy
+database. They are written together and read together, because a saved report
+and its audit row must commit atomically, so splitting them across stores buys
 nothing and cost a distributed transaction.
 
 SQLite in the prototype is a deliberate choice, not a shortcut: it makes the
@@ -336,7 +242,7 @@ sequenceDiagram
 
     U->>C: "Why are CA users underspending vs NY?"
     C->>G: turn + principal + trace_id
-    G->>G: input_guard — patterns only, no model call
+    G->>G: input_guard. Patterns only, no model call
     G->>M: router (fast model) → intent
     G->>GB: retrieve analyst precedent
     GB-->>G: 2 trios above relevance floor
@@ -346,14 +252,14 @@ sequenceDiagram
     Note over SG: reject blocked columns<br/>reject SELECT *, DML, unknown tables<br/>inject product scope<br/>clamp row limit<br/>qualify table names
     SG-->>G: safe SQL
     G->>BQ: dry run (free)
-    BQ-->>G: 340 MB — within budget
+    BQ-->>G: 340 MB. Within budget
     G->>BQ: execute (maximum_bytes_billed set)
     BQ-->>G: rows
     G->>G: pseudonymise customer ids
     G->>M: interpret (sampled rows only)
     M-->>G: explanation
     G->>M: apply persona + learned preferences
-    G->>G: output_guard — final scrub
+    G->>G: output_guard. Final scrub
     G->>S: trace events, audit rows
     G-->>U: answer
 ```
@@ -388,7 +294,7 @@ sequenceDiagram
         Note over G,U: no confirmation prompt for a no-op
     else matches found
         G->>CP: checkpoint state
-        G--xU: ⏸ interrupt — graph stops
+        G--xU: ⏸ interrupt. Graph stops
         Note over CP: pending deletion survives<br/>a process restart
         G-->>U: exact list + "type yes to confirm"
         U->>G: "yes"
@@ -403,7 +309,7 @@ sequenceDiagram
 
 ## 6. How each requirement is met
 
-### 6.1 Hybrid Intelligence — the Golden Bucket
+### 6.1 Hybrid Intelligence: the Golden Bucket
 *Designed; a working prototype is included.*
 
 **The problem it solves.** The schema says `order_items.status` is a STRING.
@@ -414,7 +320,7 @@ query that is valid and wrong. The trios carry that interpretation.
 **Retrieval at query time.** The incoming question is scored against every
 stored trio's question text and tags. The best matches above a relevance floor
 are injected into the SQL prompt as few-shot examples, carrying the analyst's
-query *and* their stated conclusion — so the model learns both the metric
+query *and* their stated conclusion, so the model learns both the metric
 choice and the reasoning pattern.
 
 Returning nothing is a valid outcome and the floor exists to make it common.
@@ -423,7 +329,7 @@ the prototype, "Why did our churn rate spike last month?" retrieves the cohort
 trio at score 11.5 and "What is the capital of France?" retrieves nothing.
 
 **Why BM25 in the prototype, vectors in production.** At the scale of a
-curated analyst library — hundreds to low thousands of trios — lexical
+curated analyst library, hundreds to low thousands of trios, lexical
 retrieval over question text plus tags performs well, needs no embedding
 endpoint, and keeps the system provider-agnostic. In production the library
 grows and paraphrase matters, so the production topology is:
@@ -466,27 +372,27 @@ trios that stop being retrieved.
 Four layers. Each one alone is insufficient, and the reason each exists is
 that the one before it can fail.
 
-**Layer 1 — the schema the model sees.** Blocked columns are not in it. A
+**Layer 1: the schema the model sees.** Blocked columns are not in it. A
 column the model has never seen is one it cannot be talked into selecting. The
 access-policy note deliberately does not enumerate what is blocked, because
 listing forbidden fields tells an attacker exactly what to ask for.
 
-**Layer 2 — the input guard.** Pattern matching for prompt injection and
+**Layer 2: the input guard.** Pattern matching for prompt injection and
 direct requests for personal data, before any model call. This is a cost
 optimisation and a UX improvement, not a security control: it gives the user a
 clear reason instead of a confusing "that column does not exist", and an
 obvious attack costs nothing. It is not relied on, because a classifier can be
 talked around.
 
-**Layer 3 — the SQL guard.** The actual control. Generated SQL is parsed into
+**Layer 3: the SQL guard.** The actual control. Generated SQL is parsed into
 an AST with `sqlglot` and judged on structure:
 
 | Check | Rejects |
 |---|---|
 | Statement type | Any `INSERT`/`UPDATE`/`DELETE`/`DROP`/`CREATE`/`ALTER`/`MERGE`/`TRUNCATE`/`GRANT` |
-| Statement count | More than one — no chaining |
+| Statement count | More than one: no chaining |
 | Table allowlist | Anything outside the four catalogued tables, including `INFORMATION_SCHEMA` and cross-project references |
-| Column **allowlist** | Anything not in the catalog, anywhere — projection, `WHERE`, `JOIN`, `ORDER BY`, `GROUP BY`, inside subqueries and CTEs. Blocked columns get a specific reason; unknown ones get another |
+| Column **allowlist** | Anything not in the catalog, anywhere: projection, `WHERE`, `JOIN`, `ORDER BY`, `GROUP BY`, inside subqueries and CTEs. Blocked columns get a specific reason; unknown ones get another |
 | Star expansion | `SELECT *` and `t.*`, because a star expands to whatever the table contains |
 | Function denylist | `EXTERNAL_QUERY`, `SESSION_USER` and similar |
 
@@ -496,7 +402,7 @@ whether a specific named person is a customer.
 
 **Allowlist, not denylist.** This distinction is the difference between safe
 by design and safe by luck. A denylist is correct only while the catalog is
-exhaustive — the moment a `phone_number` column is added upstream, a denylist
+exhaustive. The moment a `phone_number` column is added upstream, a denylist
 silently permits it, and nothing tells you. An allowlist makes an
 unclassified column unreachable until someone classifies it, so the window
 between a schema change and its review is safe by default.
@@ -512,7 +418,7 @@ reports both directions: a catalogued column the warehouse lacks breaks
 queries and fails the check; a live column nobody has classified is reported
 but is not an error, because it is already unreachable.
 
-**Layer 4 — the output scrubber.** Pseudonymises customer identifiers and
+**Layer 4: the output scrubber.** Pseudonymises customer identifiers and
 redacts identifier patterns from the final text. A redaction here means an
 earlier layer failed, so it is counted as a metric and written to the audit
 log rather than silently fixed.
@@ -523,7 +429,7 @@ identity must not. Each customer id becomes a stable `CUST-xxxxxxxx` token
 derived by HMAC with a deployment-held key. The same customer is the same
 token across turns and reports, so an executive can follow one customer
 through a conversation. The token cannot be reversed without the key, and
-rotating the key changes every pseudonym — which is the correct behaviour on
+rotating the key changes every pseudonym, which is the correct behaviour on
 key compromise.
 
 One detail worth flagging: the card-number pattern is Luhn-checked before it
@@ -585,8 +491,9 @@ strict at all.
 The resolution is to split the action across two nodes with a graph interrupt
 between them.
 
-`deletion_preview` resolves the phrase — "mentioning Client X", "from this
-conversation" — into an explicit list of report ids, filtered by ownership.
+`deletion_preview` resolves the phrase into an explicit list of report ids,
+filtered by ownership. "Mentioning Client X" and "from this conversation" both
+become a concrete set.
 Nothing is deleted. If it matches nothing, the turn ends there with a plain
 statement; there is no confirmation prompt for an action that would do
 nothing.
@@ -600,7 +507,7 @@ Four details make this correct rather than merely polite.
 **`interrupt()` re-executes its node from the top on resume.** Everything
 before the `interrupt` call runs twice. This is not in the obvious
 documentation path and it silently breaks destructive operations: a delete
-written naively runs a second time on replay. Two defences — resolution lives
+written naively runs a second time on replay. Two defences. Resolution lives
 in the *previous* node so nothing with a side effect precedes the interrupt,
 and `apply_deletion` is idempotent via a batch id that records `applied_at`.
 
@@ -609,7 +516,7 @@ question and the approval is not swept up by it. There is a test for that.
 
 **Consent parsing is a closed list, not a model call.** Interpreting consent
 for a destructive action is not a job to delegate to a probabilistic
-classifier. Anything not clearly affirmative is treated as "no" — "delete
+classifier. Anything not clearly affirmative is treated as "no", so "delete
 everything please" and "maybe later" both cancel.
 
 **Deletes are soft and reversible.** Rows are marked, every action writes an
@@ -617,7 +524,7 @@ audit row in the same transaction, and the response tells the user how to
 undo it. Oversight you cannot inspect afterwards is not oversight.
 
 Users delete only their own reports, and ownership is in the `WHERE` clause
-rather than checked afterwards — so no code path reads or enumerates another
+rather than checked afterwards, so no code path reads or enumerates another
 user's reports at all. That is what makes it safe to let them delete their own
 without an approval step.
 
@@ -625,7 +532,7 @@ without an approval step.
 *User level implemented; system level designed.*
 
 **User level.** Preferences are inferred from two signals. An explicit
-statement — "always give me bullets" — is recorded at 0.95 confidence
+statement, "always give me bullets", is recorded at 0.95 confidence
 immediately. A repeated implicit request raises confidence by 0.25 each time.
 A preference is only applied above 0.6.
 
@@ -651,7 +558,7 @@ they need:
    queue in §6.1.
 2. *Failure mining.* Every `give_up` and every guard rejection is recorded
    with the question that caused it. Clustering these weekly shows where the
-   agent is systematically weak — usually a missing semantic concept, which is
+   agent is systematically weak, usually a missing semantic concept, which is
    fixed by adding a trio or a catalog description rather than by retraining.
 3. *Prompt and catalog refinement.* When failure clusters point at a
    misunderstood column, the fix is a better `description` in
@@ -695,7 +602,7 @@ this is the classic wasteful loop, and there is a test asserting `sql_attempts
   indefinitely.
 
 **Circuit breakers.** Retries help when a dependency is briefly unwell and
-make things worse when it is properly down — every turn pays the full retry
+make things worse when it is properly down, because every turn pays the retry
 budget before failing anyway, and the retries keep load on the failing
 service. After four consecutive failures the circuit opens and calls fail
 immediately. One trial call is allowed after the cooldown; success closes it,
@@ -719,7 +626,7 @@ table with an explanation. Presentation is the first thing to sacrifice.
 `evals/run_evals.py` has three suites because "is the agent good?" is three
 questions with different failure modes.
 
-**Security — a release blocker.** Twenty-five adversarial queries that must
+**Security, the release blocker.** Twenty-five adversarial queries that must
 be rejected and five scope cases that must be rewritten, plus a check that no
 blocked column appears in the schema the model receives. One leak blocks the
 release. This suite needs no model and no warehouse, runs in about 20ms, and
@@ -727,7 +634,7 @@ belongs on every commit in CI. A security regression is not traded off against
 answer quality.
 
 **Routing.** Fifteen questions with a known intent. Misrouting is cheap to
-measure and expensive in production — a deletion classified as analysis is a
+measure and expensive in production: a deletion classified as analysis is a
 silent failure. Offline, it asserts the pattern guard does not fire on
 legitimate questions, because false positives there would quietly make the
 agent useless.
@@ -742,8 +649,8 @@ reject most of them. This is the suite that needs a live model.
 you whether an explanation is *right*. Three mechanisms, in production:
 
 1. *Answer-grounding check.* Every number in the generated narrative must
-   appear in the result set. This catches the most damaging failure mode —
-   a plausible invented figure — mechanically, with no judge model.
+   appear in the result set. This catches the most damaging failure mode,
+   a plausible invented figure, mechanically and with no judge model.
 2. *Analyst-reviewed regression set.* Thirty questions with analyst-written
    reference answers. A new prompt or model is scored against them by a human
    before rollout. Small, slow, and the only measure that actually tracks
@@ -760,7 +667,7 @@ temperature rather than with agent behaviour. It gives false confidence.
 exchanges before the user got what they wanted), refinement rate (how often
 the first answer needed rephrasing), abandonment (questions asked with no
 follow-up), report-save rate as a proxy for usefulness, and confirmation
-cancellation rate — a high rate means the agent is misreading deletion
+cancellation rate, where a high rate means the agent is misreading deletion
 requests and proposing the wrong thing.
 
 ### 6.7 Observability
@@ -796,7 +703,7 @@ its error, and the final answer. That is the message correspondence the
 requirement asks for.
 
 Payloads are scrubbed before they are written. A trace store that accumulates
-personal data is a second copy of the problem the guard exists to prevent —
+personal data is a second copy of the problem the guard exists to prevent:
 an error message quoting a row would otherwise persist PII indefinitely.
 
 Events go to two sinks from one emitter: a JSON-lines file, which is what a
@@ -810,7 +717,7 @@ above 30 seconds, cost per turn above threshold. Review weekly rather than
 page: `give_ups` clustered by topic, guard rejection reasons, repair success
 rate by error type.
 
-### 6.8 Agility — persona management
+### 6.8 Agility: persona management
 *Designed; a working prototype is included.*
 
 The CEO changes the tone of reports weekly and must not need a deployment.
@@ -828,7 +735,7 @@ Three defences, because a non-developer is editing this file:
   a runaway generation bill.
 
 **What a persona cannot do.** It cannot disable PII masking, widen data scope,
-or change which tables are reachable — because none of those live in the
+or change which tables are reachable, because none of those live in the
 prompt. Persona content is inserted as *content*, and the controls are in the
 AST guard and the identity layer. This matters: a configuration surface
 exposed to non-developers is an attack surface, and the only safe design is
@@ -842,58 +749,29 @@ interface does not change.
 
 ## 7. Error handling and fallback, end to end
 
-```mermaid
-flowchart TD
-    A[Turn begins] --> B{Input guard}
-    B -->|subversion or PII request| REFUSE[Refuse with a reason<br/>audit the attempt]
-    B -->|clean| C{Router}
-    C -->|model unavailable| CD[Default to analysis<br/>mark degraded<br/>every dangerous path<br/>has its own gate]
-    C -->|classified| D[Generate SQL]
-    CD --> D
+The path through those failures, in order:
 
-    D -->|model unavailable| DF[Honest message<br/>no invented answer]
-    D --> E{SQL guard}
-    E -->|violation, attempts left| F[Repair with the reason]
-    F --> E
-    E -->|attempts spent| GU[Give up honestly]
-    E -->|valid| G{Dry run}
-
-    G -->|over budget| H[Explain the cost<br/>suggest narrowing]
-    H --> F
-    G -->|invalid| F
-    G -->|ok| I{Execute}
-
-    I -->|permission denied| TERM[Stop — not repairable]
-    I -->|transient| RETRY[Backoff, retry ≤3]
-    RETRY -->|still failing| BREAK[Open circuit<br/>fail fast for 60s]
-    RETRY -->|recovered| I
-    I -->|syntax| F
-    I -->|empty| EMPTY[Explain, suggest an<br/>alternative — do not retry]
-    I -->|rows| J[Interpret]
-
-    J -->|model unavailable| TABLE[Render the data as a table<br/>with an explanation]
-    J --> K[Format with persona]
-    K -->|model unavailable| PLAIN[Ship correct content<br/>unformatted]
-    K --> L[Output guard]
-    EMPTY --> L
-    TABLE --> L
-    PLAIN --> L
-    GU --> L
-    TERM --> L
-    BREAK --> L
-    DF --> L
-    REFUSE --> L
-    L --> M[Answer + trace id]
-
-    classDef bad fill:#ffe8e8,stroke:#c0392b
-    classDef degraded fill:#fff4d6,stroke:#d68910
-    class REFUSE,TERM,BREAK,GU bad
-    class CD,DF,TABLE,PLAIN,EMPTY,H degraded
-```
+1. **Input guard.** Subversion or a PII request is refused with a reason and
+   audited. Everything else continues.
+2. **Router.** If the model is unavailable the turn defaults to analysis and is
+   marked degraded. Every dangerous path has its own gate further down.
+3. **SQL generation.** If no model can answer, the turn ends with an honest
+   message rather than an invented one.
+4. **SQL guard.** A violation goes to repair with the reason attached, bounded
+   to two attempts, then to `give_up`.
+5. **Dry run.** Over budget explains the cost and suggests narrowing, which
+   routes back through repair.
+6. **Execute.** Permission denied stops at once. Transient failures back off,
+   then step down the model chain, then open the circuit. An empty result is
+   explained, never retried. A syntax error goes to repair.
+7. **Interpret and format.** If the model is unavailable here, the data is
+   rendered as a plain table, or the correct content ships unformatted.
+8. **Output guard.** Every path converges here before the answer is returned
+   with its trace id.
 
 The principle throughout: **degrade along the axis that matters least first.**
 Presentation is sacrificed before content, content before correctness, and
-correctness is never sacrificed — the agent says it could not answer instead.
+correctness is never sacrificed, the agent says it could not answer instead.
 
 There is no path that ends in a stack trace reaching the user, and no path
 that ends in an invented number.
@@ -905,7 +783,7 @@ that ends in an invented number.
 The assignment asks for new capabilities and new data sources to be easy. Both
 are seams that already exist.
 
-**A new capability — charts, email, web search.** Add a node and one
+**A new capability, such as charts, email or web search.** Add a node and one
 conditional edge from the router. Charts: an `intent="chart"` branch that
 takes the result set and emits Vega-Lite, which the CLI renders as a file path
 and a web client renders inline. Email: a node that queues a Cloud Task, kept
@@ -919,8 +797,8 @@ is the only component that knows the set of intents.
 
 **A new data source.** Implement `QueryExecutor` and add a catalog module. The
 protocol is five methods. A Snowflake or Postgres source would reuse the guard
-unchanged — `sqlglot` handles the dialect — and would need its own catalog
-with its own PII classification. Cross-source questions would need a planner
+unchanged, since `sqlglot` handles the dialect, and would need its own
+catalog with its own PII classification. Cross-source questions would need a planner
 node that decomposes into per-source queries and joins the results in the
 agent, which is a real piece of work and is where I would draw the line for a
 v1.
@@ -972,7 +850,7 @@ genuine query refinement needs the planner to see the prior SQL. That is a
 contained change and is the highest-value next feature.
 
 **The router is a single point of misclassification.** A deletion classified
-as analysis fails safely — it runs a query instead of deleting — but a
+as analysis fails safely, since it runs a query instead of deleting, but a
 genuine analysis question classified as `refused` is a bad experience. Routing
 accuracy is measured in the eval suite for exactly this reason.
 

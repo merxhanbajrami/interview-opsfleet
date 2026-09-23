@@ -1,18 +1,9 @@
 """Entry nodes: what kind of turn is this, and is it allowed at all.
 
-The input guard runs before anything expensive.  It has two jobs that are
-easy to conflate and should not be:
-
-* **Scope.**  The agent answers questions about this retail dataset.  A
-  question about anything else is declined, politely and cheaply.
-* **Subversion.**  Attempts to change the agent's instructions, extract its
-  prompt, or obtain personal details about customers are refused and recorded.
-
-Refusal here is a convenience, not a security control.  The controls that
-matter — the SQL guard and the output scrubber — run regardless of what this
-node decides, because a classifier can be talked around and an AST cannot.
-What this node buys is cost: an off-topic turn costs one cheap classification
-instead of a full analysis pipeline.
+Refusal here is a convenience, not a security control. A classifier can be
+talked around; the SQL guard and output scrubber run regardless. What this
+node buys is cost: an off-topic turn pays for one cheap classification
+instead of the whole analysis pipeline.
 """
 
 from __future__ import annotations
@@ -61,7 +52,7 @@ REFUSAL_OFF_TOPIC = (
 
 REFUSAL_SUBVERSION = (
     "I can't change how I work or share my configuration. I'm here to analyse "
-    "the retail data — ask me a question about sales, products or customers."
+    "the retail data. Ask me a question about sales, products or customers."
 )
 
 REFUSAL_PII = (

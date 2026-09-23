@@ -1,15 +1,11 @@
-"""Curated semantic catalog for ``thelook_ecommerce``.
+"""Curated semantic catalog for thelook_ecommerce.
 
-This is deliberately hand-written rather than pulled from ``INFORMATION_SCHEMA``.
-A raw schema dump tells the model that ``order_items.status`` is a STRING; it
-does not tell it that the value ``Complete`` is the one that counts as revenue,
-or that ``users.email`` must never be read.  Both facts change the SQL the
-model writes, so both belong in the catalog.
+Hand-written rather than read from INFORMATION_SCHEMA, because a schema dump
+cannot say that 'Complete' is the status that counts as revenue, or that
+users.email must never be read. Both facts change the SQL the model writes.
 
-Each column carries a :class:`Sensitivity`, and that classification is the
-single source of truth for the SQL guard and the output scrubber.  Adding a
-column to the dataset therefore cannot silently widen the PII surface: an
-unclassified column is treated as blocked until someone classifies it.
+Each column carries a Sensitivity, and that classification is the single
+source of truth for the SQL guard and the output scrubber.
 """
 
 from __future__ import annotations
@@ -28,7 +24,7 @@ class Sensitivity(StrEnum):
     """
 
     PUBLIC = "public"
-    #: Direct identifier. Rejected wherever it appears in a query — projection,
+    #: Direct identifier. Rejected wherever it appears in a query: projection,
     #: filter or join. There is no analytical question that requires it.
     BLOCKED = "blocked"
     #: Identifier needed for joins and per-customer ranking, but never shown
@@ -221,7 +217,7 @@ def render_for_prompt(dataset: str, include_blocked_notice: bool = True) -> str:
     """
     lines: list[str] = [f"Dataset: `{dataset}`", ""]
     for table in TABLES.values():
-        lines.append(f"### {table.name} — {table.description}")
+        lines.append(f"### {table.name}: {table.description}")
         if table.grain:
             lines.append(f"Grain: {table.grain}")
         lines.append("")
@@ -229,7 +225,7 @@ def render_for_prompt(dataset: str, include_blocked_notice: bool = True) -> str:
             if col.sensitivity is Sensitivity.BLOCKED:
                 continue
             note = " [masked in output]" if col.sensitivity is Sensitivity.PSEUDONYM else ""
-            lines.append(f"- `{col.name}` ({col.type}){note} — {col.description}")
+            lines.append(f"- `{col.name}` ({col.type}){note}: {col.description}")
         if table.joins:
             lines.append("")
             lines.append("Joins: " + "; ".join(f"`{j}`" for j in table.joins))

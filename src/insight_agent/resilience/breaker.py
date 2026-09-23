@@ -1,17 +1,11 @@
 """Circuit breaker for outbound dependencies.
 
-Retries handle a dependency that is briefly unwell.  They make things worse
-when it is properly down: every user turn pays the full retry budget in
-latency before failing anyway, and the retries themselves keep load on the
-failing service.
+Retries help when a dependency is briefly unwell and make things worse when
+it is properly down: every turn pays the full retry budget before failing
+anyway. The breaker converts that into a fast, cheap failure.
 
-The breaker converts that into a fast, cheap failure.  After
-``failure_threshold`` consecutive failures the circuit opens and calls are
-refused immediately.  After ``reset_timeout`` one trial call is allowed
-through; success closes the circuit, failure re-opens it.
-
-Refusal raises ``CircuitOpenError``, which callers catch to fall back — to a
-second model, to cached data, or to an honest message — rather than to crash.
+Refusal raises CircuitOpenError, which callers catch to fall back rather than
+to crash.
 """
 
 from __future__ import annotations

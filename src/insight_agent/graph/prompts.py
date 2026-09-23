@@ -1,14 +1,11 @@
 """Prompt construction.
 
-Prompts are built here rather than inlined in nodes so that the exact text sent
-to the model is reviewable in one place — which is also what makes the trace
-replay useful, since the debugger can compare what was sent against what came
-back.
+Built here rather than inlined in nodes, so the exact text sent to the model
+is reviewable in one place.
 
-A standing rule runs through all of them: **prompts shape output, they do not
-enforce policy.**  Nothing here says "do not select email", because that
-protection is in the SQL guard where it cannot be argued with.  The schema the
-model receives simply has no such column in it.
+A standing rule: prompts shape output, they do not enforce policy. Nothing
+here says "do not select email", because that protection is in the SQL guard
+where it cannot be argued with.
 """
 
 from __future__ import annotations
@@ -57,7 +54,7 @@ def router_prompt(user_input: str, had_previous_result: bool) -> str:
 
 SQL_SYSTEM = """\
 You write BigQuery Standard SQL for a retail analytics dataset. Return only \
-the query — no explanation, no markdown fence.
+the query. No explanation, no markdown fence.
 
 {schema}
 
@@ -129,7 +126,7 @@ REPAIR_SYSTEM = """\
 You are fixing a BigQuery query that failed. Return only the corrected query.
 
 Read the error and change what it points at. Do not resubmit the same query \
-with cosmetic differences — if the previous attempt is listed below, it \
+with cosmetic differences. If the previous attempt is listed below, it \
 already failed, so a new attempt must differ in substance.
 
 If the error says a column does not exist, look again at the schema and pick \
@@ -206,7 +203,7 @@ def analyst_prompt(
 EMPTY_RESULT_SYSTEM = """\
 A query ran correctly and matched no rows. This is an answer, not a failure.
 
-Say plainly that nothing matched, and give the single most likely reason — a \
+Say plainly that nothing matched, and give the single most likely reason: a \
 filter that was too narrow, a period with no activity, a value that does not \
 exist in the data. Offer one specific alternative question that would return \
 data.
@@ -223,7 +220,7 @@ SCHEMA_SYSTEM = """\
 You explain what data is available to a non-technical executive.
 
 Describe what questions can be answered, in business terms. Talk about \
-"orders", "what customers spent", "product categories" — not about column \
+"orders", "what customers spent", "product categories", not about column \
 types or join keys. Do not list every column. Give three concrete example \
 questions the person could ask next.
 """
@@ -302,7 +299,7 @@ Detect whether the user stated a lasting presentation preference. Reply with \
 JSON only.
 
 Only report a preference when the user is describing how they want answers \
-presented in general or right now — "as a table", "keep it short", "always \
+presented in general or right now: "as a table", "keep it short", "always \
 show me the SQL". A question about the business is not a preference.
 
 Known keys and their allowed values:

@@ -1,25 +1,11 @@
 """The Saved Reports library and its destructive-operation path.
 
-Requirement 3 asks for a strict confirmation flow that does not damage the
-user experience.  The shape that satisfies both is *preview, confirm, apply*:
+The shape that satisfies requirement 3 is preview, confirm, apply.
 
-1. ``find_deletion_candidates`` resolves a phrase like "reports mentioning
-   Client X" into an explicit, ownership-filtered list.
-2. The caller shows that exact list and asks once.
-3. ``apply_deletion`` executes against the recorded batch.
-
-Three properties make it safe rather than merely polite:
-
-**Nothing is inferred at apply time.**  The batch stores the resolved ids.  If
-the library changed between preview and confirmation, the confirmed set is
-still what the user saw and agreed to.
-
-**Applying twice is a no-op.**  LangGraph re-runs a node from the start when
-an interrupt resumes, so a delete written naively would run again on replay.
-The batch row carries ``applied_at``; a second call returns the first result.
-
-**Deletes are soft.**  Rows are marked, not removed, and every action writes an
-audit entry. Oversight you cannot inspect afterwards is not oversight.
+Three properties make it safe rather than merely polite. Nothing is inferred
+at apply time, because the batch stores the resolved ids. Applying twice is a
+no-op, because LangGraph re-runs a node body when an interrupt resumes. And
+deletes are soft, with an audit row for every action.
 """
 
 from __future__ import annotations
@@ -144,7 +130,7 @@ class ReportStore:
         """Resolve a deletion request into an explicit list.
 
         Every branch filters on ``user_id``. A user cannot delete, or even
-        enumerate, another user's reports — which is what makes it safe to let
+        enumerate, another user's reports, which is what makes it safe to let
         them delete their own without an approval step.
         """
         sql = ["SELECT * FROM reports WHERE user_id = ? AND deleted_at IS NULL"]

@@ -1,14 +1,8 @@
 """Fixture-replaying executor, used by the eval harness and the tests.
 
-Evaluation has to be deterministic and free.  Running the eval suite against
-BigQuery would make results depend on the dataset's current contents, cost
-money on every run, and make the suite unusable in CI without cloud
-credentials.
-
-Fixtures are recorded from real BigQuery responses (see
-``evals/record_fixtures.py``), so what is replayed is genuine warehouse output,
-not invented data.  Queries are matched on a normalised form of the SQL, so
-formatting differences do not cause a miss.
+Evaluation has to be deterministic and free. Fixtures are recorded from real
+BigQuery responses by evals/record_fixtures.py, so what is replayed is
+genuine warehouse output rather than invented data.
 """
 
 from __future__ import annotations

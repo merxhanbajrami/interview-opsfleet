@@ -1,19 +1,12 @@
 """Who is asking, and what they are allowed to analyse.
 
-The assignment states that each user may only analyse "products related to
-him".  We model that as a *product scope*: a set of departments and/or
-categories attached to the principal.  A merchandising VP for Womenswear
-asking "what were our top sellers last month" must get a different answer from
-the CEO asking the identical question, without either of them phrasing it
+Each principal carries a product scope, so a Womenswear VP and the CEO get
+different answers to the same question without either phrasing it
 differently.
 
-The scope is never passed to the model as an instruction.  It is compiled into
-a SQL predicate and applied by rewriting the query (see
-``security.sql_guard``), so no prompt can talk the agent out of it.
-
-In production this comes from the identity provider — Okta or Google Workspace
-groups via OIDC claims — and is cached per session.  The file-backed directory
-here keeps the prototype runnable without an IdP.
+The scope is never passed to the model as an instruction. It is compiled into
+a SQL predicate and applied by rewriting the query, so no prompt can talk the
+agent out of it.
 """
 
 from __future__ import annotations

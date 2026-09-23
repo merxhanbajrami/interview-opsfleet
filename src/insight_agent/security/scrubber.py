@@ -1,22 +1,13 @@
 """Last line of defence on the way out.
 
-The SQL guard should make this module redundant: a query that could return an
-email address never runs.  It exists anyway because the guard is not the only
-path to the user's screen — an error message can quote a row, a model can
-hallucinate a plausible-looking address into a narrative, and a future
-contributor can add a code path that bypasses the guard.
+The SQL guard should make this redundant, but it is not the only path to the
+user's screen: an error can quote a row, a model can hallucinate an address,
+a future contributor can add a code path that bypasses the guard.
 
-Two jobs:
-
-**Pseudonymisation.**  "Top customers" is a required capability, so customer
-identity must survive into the output while personal identity must not.  Each
-customer id becomes a stable ``CUST-xxxxxxxx`` token, derived by HMAC.  The
-same customer is the same token across turns and reports, so an executive can
-follow one customer through a conversation, but the token cannot be reversed
-into a customer id without the key.
-
-**Pattern redaction.**  A conservative sweep for identifiers that should never
-appear regardless of origin.
+Two jobs. Customer ids become stable HMAC pseudonyms, so "top customers"
+works while personal identity does not survive. And identifier patterns are
+redacted, with card numbers Luhn-checked first, because in a tool full of
+large numbers a false positive would corrupt real revenue figures.
 """
 
 from __future__ import annotations

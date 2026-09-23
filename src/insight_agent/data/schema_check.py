@@ -1,29 +1,11 @@
 """Reconcile the curated catalog against the live warehouse schema.
 
-The catalog in ``data/catalog.py`` is hand-written, because it carries two
-things ``INFORMATION_SCHEMA`` cannot: what a column *means* to the business,
-and whether it holds personal data.  The cost of that choice is that it can
-drift from the real table.
+Drift has two failure modes and they are not equally bad. A catalogued column
+the warehouse lacks breaks queries, loudly. A live column absent from the
+catalog is silent, but harmless: the guard is an allowlist, so an
+unclassified column is unreachable until someone classifies it.
 
-Drift has two failure modes, and they are not equally bad.
-
-**A catalog column that no longer exists** breaks queries.  The model is told
-``users.state`` exists, writes a query using it, and BigQuery rejects it. Loud,
-immediate, and the repair loop will burn attempts on something it cannot fix.
-
-**A live column absent from the catalog** is the dangerous one, because it is
-silent.  Suppose a ``phone_number`` column is added upstream. The model never
-sees it, so it will not select it — and if it somehow did, the guard rejects
-it, because an unclassified column is treated as blocked. That is the fail-
-closed property the design claims, and this check is what verifies the claim
-rather than asserting it.
-
-So an unknown column is reported as *needs classification*, not as an error.
-The system is safe in the meantime; it is simply not yet using that data.
-
-Run it after configuring BigQuery, and in CI against a scheduled job:
-
-    insight verify-schema
+So a missing column fails the check and an unknown column is only reported.
 """
 
 from __future__ import annotations
@@ -139,7 +121,7 @@ def summarise(report: SchemaReport) -> str:
             continue
         if diff.missing_in_warehouse:
             lines.append(
-                f"{diff.name}: BREAKS QUERIES — catalogued but absent: "
+                f"{diff.name}: BREAKS QUERIES, catalogued but absent: "
                 + ", ".join(diff.missing_in_warehouse)
             )
         for column, expected, actual in diff.type_mismatches:

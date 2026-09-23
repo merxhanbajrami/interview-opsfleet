@@ -1,19 +1,12 @@
 """SQLite-backed application state.
 
 One file holds saved reports, user preferences, the audit log and the trace
-store.  SQLite is the right choice for a prototype that must run on a
-reviewer's machine with no services to start, and it is not a toy: the schema
-below is the same shape we would deploy on Cloud SQL for Postgres, and the
-access layer is narrow enough that swapping the driver is a contained change.
+store. The schema is the shape we would deploy on Cloud SQL; only the driver
+differs.
 
-Design notes that matter beyond the prototype:
-
-* Reports are **soft-deleted**.  A destructive action that cannot be examined
-  afterwards is not auditable, and requirement 3 is about oversight.
-* Every mutation writes an audit row in the same transaction.
-* ``deletion_batches`` records the exact set of ids a confirmation applied to.
-  LangGraph re-executes a node from the start when an interrupt resumes, so a
-  delete must be idempotent; the batch id makes replay a no-op.
+Reports are soft-deleted and every mutation writes an audit row in the same
+transaction, because a destructive action that cannot be examined afterwards
+is not auditable.
 """
 
 from __future__ import annotations

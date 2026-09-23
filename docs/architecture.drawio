@@ -1,0 +1,189 @@
+<mxfile host="app.diagrams.net" agent="insight-agent">
+  <diagram name="1. Production Architecture" id="architecture">
+    <mxGraphModel dx="2236" dy="1329" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1740" pageHeight="1320" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="Insight Agent — production topology&lt;br&gt;Conversational data analysis over BigQuery for retail executives." vertex="1">
+          <mxGeometry height="44" width="660" x="60" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="The policy layer is drawn as its own band because it is load-bearing.&lt;br&gt;Everything else can be swapped; those three boxes are why the system&lt;br&gt;is safe to point at production data." vertex="1">
+          <mxGeometry height="60" width="500" x="1180" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="g3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="CLIENT" vertex="1">
+          <mxGeometry height="120" width="470" x="70" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" parent="g3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="CLI chat&lt;br&gt;prototype" vertex="1">
+          <mxGeometry height="58" width="130" x="20" y="42" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" parent="g3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Web app&lt;br&gt;future" vertex="1">
+          <mxGeometry height="58" width="130" x="170" y="42" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" parent="g3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Slack bot&lt;br&gt;future" vertex="1">
+          <mxGeometry height="58" width="130" x="320" y="42" as="geometry" />
+        </mxCell>
+        <mxCell id="g7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="EDGE — authenticates, then passes principal + entitlements downstream" vertex="1">
+          <mxGeometry height="124" width="470" x="60" y="258" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" parent="g7" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Cloud Load Balancing&lt;br&gt;+ Cloud Armor" vertex="1">
+          <mxGeometry height="60" width="200" x="20" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n9" parent="g7" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Identity-Aware Proxy&lt;br&gt;OIDC · group claims" vertex="1">
+          <mxGeometry height="60" width="200" x="250" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="g10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="COMPUTE — Cloud Run" vertex="1">
+          <mxGeometry height="240" width="470" x="60" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" parent="g10" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="Agent API&lt;br&gt;FastAPI · autoscaled" vertex="1">
+          <mxGeometry height="60" width="200" x="20" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" parent="g10" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="LangGraph runtime&lt;br&gt;stateful DAG" vertex="1">
+          <mxGeometry height="60" width="200" x="250" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" parent="g10" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="Async workers — Cloud Tasks&lt;br&gt;long reports · email · exports" vertex="1">
+          <mxGeometry height="56" width="430" x="20" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="n14" parent="g10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="A slow SMTP call must not hold a conversation open." vertex="1">
+          <mxGeometry height="26" width="430" x="20" y="196" as="geometry" />
+        </mxCell>
+        <mxCell id="g15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="INTELLIGENCE" vertex="1">
+          <mxGeometry height="240" width="520" x="580" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="n16" parent="g15" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="LLM provider&lt;br&gt;Vertex AI / Bedrock /&lt;br&gt;direct API" vertex="1">
+          <mxGeometry height="66" width="150" x="20" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n17" parent="g15" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Golden Bucket&lt;br&gt;GCS +&lt;br&gt;Vector Search" vertex="1">
+          <mxGeometry height="66" width="150" x="185" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n18" parent="g15" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Persona store&lt;br&gt;Firestore · versioned" vertex="1">
+          <mxGeometry height="66" width="150" x="350" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n19" parent="g15" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="Analyst trios carry interpretation the schema cannot: which status&lt;br&gt;counts as revenue, which metric answers an “underspending” question.&lt;br&gt;&lt;br&gt;Personas are data, so a tone change needs no deployment." vertex="1">
+          <mxGeometry height="90" width="480" x="20" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="g20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="OBSERVABILITY" vertex="1">
+          <mxGeometry height="240" width="530" x="1150" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="n21" parent="g20" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cloud Trace&lt;br&gt;OpenTelemetry spans" vertex="1">
+          <mxGeometry height="60" width="230" x="20" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n22" parent="g20" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cloud Logging&lt;br&gt;structured events" vertex="1">
+          <mxGeometry height="60" width="230" x="270" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n23" parent="g20" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cloud Monitoring — dashboards · alerts" vertex="1">
+          <mxGeometry height="48" width="480" x="20" y="128" as="geometry" />
+        </mxCell>
+        <mxCell id="n24" parent="g20" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="Alert on output_redactions &gt; 0. It is the only metric that indicates&lt;br&gt;a control failure rather than a quality problem." vertex="1">
+          <mxGeometry height="40" width="480" x="20" y="186" as="geometry" />
+        </mxCell>
+        <mxCell id="g25" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="POLICY LAYER — in-process, synchronous, on every turn" vertex="1">
+          <mxGeometry height="220" width="1040" x="60" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="n26" parent="g25" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" value="Input guard&lt;br&gt;injection · scope" vertex="1">
+          <mxGeometry height="74" width="220" x="60" y="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n27" parent="g25" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" value="SQL guard&lt;br&gt;AST validation · column allowlist&lt;br&gt;per-user scope rewrite · cost gate" vertex="1">
+          <mxGeometry height="74" width="240" x="410" y="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n28" parent="g25" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" value="Output guard&lt;br&gt;pseudonymise · redact" vertex="1">
+          <mxGeometry height="74" width="200" x="780" y="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n29" parent="g25" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="Generated SQL is untrusted input. It is checked by parsing it, not by asking the model to behave.&lt;br&gt;An unclassified column is unreachable, because the guard is an allowlist — a column added upstream cannot leak before it is classified." vertex="1">
+          <mxGeometry height="50" width="920" x="60" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="g30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontStyle=1;fontColor=#555555;" value="DATA — Cloud SQL holds agent state; BigQuery is the warehouse and is read-only" vertex="1">
+          <mxGeometry height="250" width="1040" x="60" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="n31" parent="g30" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Cloud SQL / Postgres&lt;br&gt;reports · preferences&lt;br&gt;audit · checkpoints" vertex="1">
+          <mxGeometry height="104" width="250" x="40" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="n32" parent="g30" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="BigQuery&lt;br&gt;thelook_ecommerce&lt;br&gt;READ-ONLY" vertex="1">
+          <mxGeometry height="104" width="250" x="395" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="n33" parent="g30" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Memorystore&lt;br&gt;schema + result cache&lt;br&gt;read-through, from the runtime" vertex="1">
+          <mxGeometry height="104" width="250" x="750" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="n34" parent="g30" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#666666;" value="Prototype substitutes SQLite for Cloud SQL and replayed fixtures for BigQuery.&lt;br&gt;Same schema, same access layer, same interrupt semantics — only the driver differs." vertex="1">
+          <mxGeometry height="44" width="960" x="40" y="172" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" edge="1" parent="1" source="n4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" edge="1" parent="1" source="n5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" edge="1" parent="1" source="n6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n8" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="455" y="220" />
+              <mxPoint x="280" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e38" edge="1" parent="1" source="n8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" edge="1" parent="1" source="n9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="332" />
+              <mxPoint x="290" y="494" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e40" edge="1" parent="1" source="n11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n12" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n13" value="enqueue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n26" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n16" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e45" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;entryX=0.994;entryY=0.202;entryDx=0;entryDy=0;entryPerimeter=0;" target="n12" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="920" y="443" as="sourcePoint" />
+            <mxPoint x="500" y="439.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e46" edge="1" parent="1" source="n27" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n32" value="validated + scoped SQL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e47" edge="1" parent="1" source="n26" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n27" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e48" edge="1" parent="1" source="n27" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n28" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e49" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;" target="n31" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e50" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;dashed=1;strokeColor=#999999;" target="n21" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="540" />
+              <mxPoint x="1285" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e51" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;dashed=1;strokeColor=#999999;" target="n22" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="450" />
+              <mxPoint x="1535" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e52" edge="1" parent="1" source="n22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;dashed=1;strokeColor=#999999;" target="n23" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e53" edge="1" parent="1" source="n21" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;fontSize=10;endArrow=blockThin;endFill=1;strokeColor=#666666;dashed=1;strokeColor=#999999;" target="n23" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

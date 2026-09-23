@@ -1,23 +1,13 @@
 """Graph assembly.
 
-The shape of this graph is the design decision worth defending.  It is a
-directed graph with branches and one bounded cycle, not a chain, and the
-difference is not cosmetic:
+The shape is the design decision worth defending. It branches, so a schema
+question never pays for SQL generation. It has exactly one cycle, and
+sql_repair routes back to sql_guard rather than to the executor, so a repair
+that reintroduces a blocked column is still caught. Every path converges on
+output_guard, so END is reachable from nowhere else.
 
-* **Branches** mean a schema question never pays for SQL generation, and a
-  deletion never touches the warehouse.  In a linear chain every turn runs
-  every step and the irrelevant ones are told to do nothing.
-* **The cycle** is what self-correction is.  ``sql_repair`` routes back to
-  ``sql_guard``, so a repaired query is re-validated rather than trusted —
-  a repair that introduced a PII column would otherwise walk straight past
-  the control that exists to stop it.
-* **Convergence** on ``output_guard`` means every path out of the graph passes
-  the final scrub. A new branch added later inherits that automatically,
-  because the edge into ``END`` is not available anywhere else.
-
-The checkpointer is not an optimisation. ``interrupt()`` requires persisted
-state, so the confirmation flow in requirement 3 depends on it, and durable
-conversation state across restarts falls out of the same mechanism.
+The checkpointer is not an optimisation: interrupt() requires persisted
+state, so the confirmation flow depends on it.
 """
 
 from __future__ import annotations
@@ -173,7 +163,7 @@ def build_checkpointer(path: Path) -> SqliteSaver:
 
     Constructed from an explicit connection rather than the documented
     ``from_conn_string`` context manager, which closes the database when the
-    block exits — fine for a script, wrong for a long-running CLI session.
+    block exits. That is fine for a script and wrong for a long-running CLI.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path), check_same_thread=False)

@@ -1,18 +1,9 @@
-"""Gemini access with the failure handling requirement 5 asks for.
+"""Model access with the failure handling requirement 5 asks for.
 
-Three defences, in order of how much they cost:
-
-1. **Retry with jittered exponential backoff** on transient failures only.
-   A 429 or a 503 is worth retrying; a malformed request never is, and
-   retrying it wastes the user's time to reach the same error.
-2. **Model fallback.**  If the primary model is unavailable or rate-limited
-   past its retry budget, the call is reissued against a smaller model.  A
-   slightly weaker answer beats no answer.
-3. **Circuit breaker.**  When Gemini is properly down, calls fail immediately
-   with a clear message instead of every turn paying the full retry budget.
-
-The free tier's rate limits make this practical rather than theoretical: the
-assignment itself warns about them.
+Three defences, in order of cost: retry with jittered backoff on transient
+failures only, step down a chain of fallback models, then open a circuit
+breaker so a dead dependency fails fast instead of costing every turn the
+full retry budget.
 
 Token usage is recorded per call, because "without inflating costs" cannot be
 verified without measuring it.
@@ -116,7 +107,7 @@ class LLMClient:
 
         Found in live testing: models are rate-limited independently. A
         provider-wide breaker meant that exhausting the primary model's quota
-        also refused calls to the fallback model, which was healthy — so the
+        also refused calls to the fallback model, which was healthy, so the
         fallback path could never fire in exactly the situation it exists for.
         """
         return REGISTRY.get(

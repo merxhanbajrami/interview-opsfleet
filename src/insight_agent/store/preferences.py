@@ -1,22 +1,13 @@
 """Learned user preferences (requirement 4, user level).
 
-"User A prefers tables, User B prefers bullet points" is not something to ask
-about.  It is something to notice.  Preferences are inferred from two signals:
+"User A prefers tables" is not something to ask about. It is something to
+notice, from explicit statements and from repeated requests.
 
-* **Explicit statements.**  "Always give me bullets" is unambiguous and is
-  recorded at high confidence immediately.
-* **Repeated requests.**  Asking "can you put that in a table" three times is
-  the same instruction, spread out. Each occurrence raises confidence.
+Confidence matters because a preference applied too eagerly is worse than
+none: one offhand "as bullets please" should not change every future report.
 
-Confidence matters because a preference applied too eagerly is worse than none:
-one offhand "as bullets please" should not permanently change every future
-report.  A preference is only applied once confidence passes a threshold, and
-it decays if later evidence contradicts it.
-
-Storage is a small key/value table per user rather than a free-text memory
-blob, because preferences have to be inspectable and correctable.  The user can
-run ``/prefs`` to see exactly what the agent believes about them, and say
-"forget that".
+Storage is a small closed key/value set rather than a free-text memory blob,
+so a model cannot invent a key and the user can inspect and correct it.
 """
 
 from __future__ import annotations

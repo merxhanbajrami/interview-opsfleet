@@ -1,8 +1,8 @@
 """Shared test fixtures.
 
 The agent is exercised end to end with a scripted model and a fixture-backed
-warehouse, so the full graph — routing, guarding, the repair cycle, the
-confirmation interrupt — runs with no network and no cloud credentials.
+warehouse, so the full graph runs with no network and no cloud credentials:
+routing, guarding, the repair cycle and the confirmation interrupt.
 """
 
 from __future__ import annotations

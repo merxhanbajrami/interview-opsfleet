@@ -9,9 +9,11 @@ Built on **LangGraph** as a stateful directed graph with bounded
 self-correction, AST-level PII enforcement, and a human-in-the-loop
 confirmation flow for destructive operations.
 
-- **[DESIGN.md](DESIGN.md)** — architecture, technology choices, and how each
+- **[DESIGN.md](DESIGN.md)**: architecture, technology choices, and how each
   requirement is met.
-- This file — setup and an example run.
+- **[docs/architecture.drawio](docs/architecture.drawio)**: the production
+  architecture as an editable draw.io file.
+- This file: setup and an example run.
 
 ---
 
@@ -21,7 +23,7 @@ confirmation flow for destructive operations.
 you › Why are customers in California underspending compared to New York?
 
 California customers spend 18% less per head than New York: $284 against
-$347. The gap is not in how often they buy — both average 2.3 orders — but
+$347. The gap is not in how often they buy. Both average 2.3 orders, but
 in basket composition. California skews 24% more of its volume into
 Accessories and Sleep & Lounge, where the average item sells for $31,
 while New York over-indexes into Outerwear at $94 an item.
@@ -46,7 +48,7 @@ The agent can:
 ## Requirements
 
 - **Python 3.11–3.13** (3.12 recommended)
-- **A model API key** — Gemini, Anthropic, OpenAI or Groq. Or Ollama, with no
+- **A model API key**: Gemini, Anthropic, OpenAI or Groq. Or Ollama, with no
   key at all.
 - **A Google Cloud project** for BigQuery. The dataset is public; the project
   is only what queries are attributed to. **BigQuery sandbox is sufficient and
@@ -58,7 +60,7 @@ The agent can:
 
 ### 1. Install
 
-With [uv](https://docs.astral.sh/uv/) (recommended — it manages the Python
+With [uv](https://docs.astral.sh/uv/) (recommended, it manages the Python
 version too):
 
 ```bash
@@ -78,7 +80,7 @@ pip install -e .
 ### 2. BigQuery access
 
 BigQuery **sandbox** gives 1 TB/month of free query capacity with no billing
-account. Do not start a "free trial" — you do not need one.
+account. Do not start a "free trial". You do not need one.
 
 1. Create a project at
    [console.cloud.google.com/projectcreate](https://console.cloud.google.com/projectcreate).
@@ -137,7 +139,7 @@ uv run insight doctor
 ```
 
 This reports the configuration, whether credentials are present, and whether
-BigQuery is reachable — before you are mid-demo.
+BigQuery is reachable: before you are mid-demo.
 
 ---
 
@@ -231,7 +233,7 @@ The agent lists the exact reports and waits. Type anything other than `yes`
 and nothing happens. Deletes are soft, and the response tells you how to
 restore them.
 
-A request matching nothing — `Delete all reports mentioning Zzzz` — is
+A request matching nothing: `Delete all reports mentioning Zzzz`, is
 answered directly with no confirmation prompt.
 
 ### Resilience (requirement 5)
@@ -241,7 +243,7 @@ you › What is the revenue for order status 'Nonexistent'?
 ```
 
 The query is valid and returns nothing. The agent explains why and proposes a
-question that would return data. It does **not** retry — there is a test
+question that would return data. It does **not** retry. There is a test
 asserting exactly one attempt for this case.
 
 To see self-correction, temporarily set `INSIGHT_MODEL_PRIMARY_OVERRIDE` to a
@@ -266,7 +268,7 @@ and something is wrong.
 
 ### Live persona change (requirement 8)
 
-With the chat still running, edit `personas/executive_brief.yaml` — change
+With the chat still running, edit `personas/executive_brief.yaml`. Change
 `max_words` to `120`, or rewrite the `tone` block. Save it, then ask another
 question. The next answer uses the new persona. No restart, no deployment.
 
@@ -311,7 +313,7 @@ src/insight_agent/
 ├── cli.py                  Chat interface, trace replay, metrics
 ├── config.py               Every tunable value, in one place
 ├── graph/
-│   ├── build.py            Graph assembly — the architecture, in code
+│   ├── build.py            Graph assembly, the architecture, in code
 │   ├── state.py            What is checkpointed and survives an interrupt
 │   ├── prompts.py          Every prompt, in one reviewable place
 │   ├── services.py         Dependency container

@@ -11,7 +11,7 @@ Run this after configuring BigQuery:
     python evals/record_fixtures.py
 
 Queries are passed through the SQL guard first, so what gets recorded is
-keyed on exactly the form the agent will execute — including the row limit and
+keyed on exactly the form the agent will execute, including the row limit and
 any scope rewrite.
 """
 
@@ -116,7 +116,7 @@ def main() -> int:
     for name, user, raw_sql in QUERIES:
         checked = guard.check(raw_sql, get_principal(user))
         if not checked.ok:
-            print(f"  SKIP {name}: guard rejected — {checked.reason()}")
+            print(f"  SKIP {name}: guard rejected: {checked.reason()}")
             continue
 
         try:

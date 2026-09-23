@@ -1,18 +1,11 @@
-"""BigQuery implementation of :class:`QueryExecutor`.
+"""BigQuery implementation of QueryExecutor.
 
-Two things distinguish this from a thin SDK wrapper:
-
-**Cost is checked before data is read.**  Every query is dry-run first.  A dry
-run returns the exact number of bytes the query would scan, costs nothing, and
-validates syntax as a side effect.  Queries over budget are refused with a
-message the agent can act on, rather than being run and billed.
-``maximum_bytes_billed`` is also set as a hard backstop enforced by BigQuery
-itself, in case a dry-run estimate is ever wrong.
-
-**Failures are classified, not propagated.**  The graph needs to know whether
-a failure is worth repairing (bad SQL), worth retrying (backend hiccup), or
-terminal (no permission).  Retrying a permission error burns quota and
-latency for a guaranteed failure.
+Two things distinguish it from a thin SDK wrapper. Every query is dry-run
+first, which is free, validates syntax and returns the exact byte count, so
+queries over budget are refused before they cost anything. And failures are
+classified into the taxonomy in executor.py rather than propagated, because
+the graph needs to know whether a failure is worth repairing, retrying, or
+neither.
 """
 
 from __future__ import annotations
@@ -179,8 +172,8 @@ def _classify(message: str):
         return QueryTransientError(message)
     if any(k in lowered for k in ("deadline", "timeout", "unavailable", "internal error")):
         return QueryTransientError(message)
-    # Everything else — syntax, unknown column, unknown table, type mismatch —
-    # is something the model has a real chance of repairing.
+    # Syntax, unknown column, unknown table and type mismatch are all things
+    # the model has a real chance of repairing.
     return QuerySyntaxError(message)
 
 

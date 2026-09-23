@@ -1,28 +1,14 @@
 """The Golden Bucket: how analysts answered questions like this one before.
 
-Requirement 1 says the agent cannot rely on the warehouse alone.  A schema
-tells the model that ``order_items.status`` exists; it does not tell it that
-this company's analysts count 'Complete' and 'Shipped' as realised demand and
-exclude 'Returned'.  That interpretation lives in the trios — question, query,
-report — that human analysts produced, and it is what turns a schema-correct
-query into a business-correct one.
+A schema says order_items.status is a STRING. It does not say this company
+counts 'Complete' and 'Shipped' as realised revenue. That interpretation
+lives in the trios, and it is what turns a schema-correct query into a
+business-correct one.
 
-**Retrieval at query time.**  The incoming question is scored against every
-stored question with BM25 and the best few are injected as few-shot examples
-into the SQL prompt.  Scores below a floor are discarded: an irrelevant example
-is worse than none, because the model will try to follow it.
-
-**Why lexical and not embeddings.**  The provider is pluggable and not every
-provider exposes an embeddings endpoint, so an embedding index would bind the
-whole system back to one vendor. At the scale of a curated analyst library —
-hundreds to low thousands of trios — BM25 over question text plus tag matching
-retrieves well. The interface below is the seam: swapping in Vertex AI Vector
-Search or pgvector means implementing ``score`` differently, and nothing above
-this module changes. DESIGN.md covers the production topology.
-
-**Updating the bucket.**  See ``promote_candidate``. New trios are not written
-by the agent directly; they are queued for analyst review, because a bucket
-that learns from its own unreviewed output drifts.
+Retrieval is BM25 over question text and tags. Matches below a relevance
+floor are discarded, because an irrelevant example is worse than none: the
+model will try to follow it. Production swaps in Vector Search by
+reimplementing score(); nothing above this module changes.
 """
 
 from __future__ import annotations

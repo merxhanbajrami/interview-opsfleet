@@ -1,18 +1,11 @@
 """Model provider registry.
 
-The agent depends on a chat model, not on a vendor.  Every node calls
-``LLMClient``; only this module knows which company answers.  Switching
-provider is an environment variable, which matters for three reasons:
+The agent depends on a chat model, not a vendor. Every node calls LLMClient;
+only this module knows which company answers, so switching is one env var.
 
-* the free tiers that make this prototype runnable have tight rate limits, so
-  being able to move is practical rather than theoretical;
-* the same graph must be able to run on a self-hosted model where data
-  residency rules forbid a third-party API;
-* "reasoning for the chosen LLM" is a design question, and a design that
-  cannot be changed has not really chosen anything.
-
-Each entry declares its own default model names so that a switch does not
-require editing three other settings.
+That matters practically: the free tiers that make this prototype runnable
+have tight rate limits, and a design that cannot change its provider has not
+really chosen one.
 """
 
 from __future__ import annotations

@@ -88,7 +88,7 @@ def test_a_model_that_writes_pii_sql_is_stopped_by_the_guard(make_agent, run_tur
         "fixing a bigquery": "SELECT state, COUNT(*) AS n FROM users GROUP BY state",
     }
     result = run_turn(agent, services, "Show me our best customers")
-    # Either repaired into something safe or given up on — never executed.
+    # Either repaired into something safe or given up on, never executed.
     assert "email" not in result.get("sql", "").lower()
     assert any("personal data" in f["error"] for f in result.get("sql_failures", [])) \
         or result.get("degraded")

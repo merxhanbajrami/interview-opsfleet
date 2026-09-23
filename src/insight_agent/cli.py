@@ -1,16 +1,7 @@
 """Command-line chat interface.
 
-Two properties the assignment asks for explicitly shape this file.
-
-**The interface must not crash.**  Every turn runs inside an exception
-boundary. A failure anywhere below produces a message and a trace id, and the
-session continues with its history intact. There is no path where an
-unhandled exception ends the conversation.
-
-**Confirmation must be strict without being tiresome.**  When the graph
-interrupts, the exact reports are listed and a single explicit answer is
-required. Anything other than a clear yes is treated as no. A request that
-matches nothing never reaches this prompt at all.
+Every turn runs inside an exception boundary, so a failure produces a message
+and a trace id rather than ending the session.
 """
 
 from __future__ import annotations
@@ -41,7 +32,7 @@ app = typer.Typer(
 console = Console()
 
 BANNER = """\
-[bold]Insight Agent[/bold] — retail data analysis
+[bold]Insight Agent[/bold]: retail data analysis
 Ask about revenue, products, customers or trends. Type [cyan]/help[/cyan] for \
 commands, [cyan]/quit[/cyan] to leave."""
 
@@ -131,7 +122,7 @@ def metrics() -> None:
     table.add_column("metric")
     table.add_column("value", justify="right")
     for key, value in agent_metrics(services.conn).items():
-        table.add_row(key, "—" if value is None else str(value))
+        table.add_row(key, "-" if value is None else str(value))
     console.print(table)
 
 
@@ -180,7 +171,7 @@ def verify_schema() -> None:
         console.print(f"  [yellow]diff[/yellow]    {diff.name}")
         for column in diff.missing_in_warehouse:
             console.print(
-                f"            [red]breaks queries[/red] — catalogued but absent "
+                f"            [red]breaks queries[/red]: catalogued but absent "
                 f"from the warehouse: [bold]{column}[/bold]"
             )
         for column, expected, actual in diff.type_mismatches:
@@ -332,7 +323,7 @@ class _Session:
         console.print()
         console.print(table)
         console.print(f"[dim]Matched: {payload.get('criterion', '')}[/dim]")
-        console.print("[dim]Soft delete — recoverable afterwards.[/dim]")
+        console.print("[dim]Soft delete, recoverable afterwards.[/dim]")
         try:
             answer = console.input(
                 "[bold red]Type 'yes' to confirm, anything else cancels ›[/bold red] "
@@ -406,7 +397,7 @@ class _Session:
             _render_trace(events) if events else console.print("No such trace.")
         elif name == "/metrics":
             for key, value in agent_metrics(self.services.conn).items():
-                console.print(f"  {key:26} {'—' if value is None else value}")
+                console.print(f"  {key:26} {'-' if value is None else value}")
         elif name == "/health":
             self._health()
         elif name == "/new":

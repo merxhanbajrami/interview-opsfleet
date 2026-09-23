@@ -1,22 +1,13 @@
 """The analysis pipeline: question in, grounded explanation out.
 
-This is the part of the graph that is a cycle rather than a chain.  SQL
-generation can fail in two different ways — rejected by the guard, or rejected
-by BigQuery — and both feed the same repair node, which loops back.  The cycle
-is bounded by ``sql_attempts``, which is the only thing standing between a
-confused model and an infinite loop, so it is checked in the routing function
-rather than inside a node where an early return could skip it.
+This is the part of the graph that is a cycle rather than a chain. SQL can
+fail two ways, rejected by the guard or rejected by BigQuery, and both feed
+the same repair node. The bound lives in the routing functions, not inside a
+node, where an early return could skip it.
 
-The failure taxonomy earns its keep here.  Three different outcomes that all
-look like "the query didn't work" are handled differently:
-
-* **Repairable** (bad column, syntax, over budget) — show the model the error
-  and let it try again, at most ``max_sql_repair_attempts`` times.
-* **Terminal** (no permission, circuit open) — stop immediately. Retrying
-  cannot succeed and costs the user time to reach the same failure.
-* **Empty but valid** — not a failure at all. The query was right and the
-  answer is "nothing matched". Retrying this is the classic wasteful loop, so
-  it routes straight to interpretation instead.
+Three outcomes that all look like "the query didn't work" are handled
+differently: repairable, terminal, and empty-but-valid. The last is not a
+failure at all, and retrying it is the classic wasteful loop.
 """
 
 from __future__ import annotations
@@ -416,7 +407,7 @@ def make_give_up(services: Services) -> Callable[[AgentState], dict[str, Any]]:
                 f"I couldn't answer that one. I tried {attempts} "
                 f"{'query' if attempts == 1 else 'different queries'} and the "
                 f"last problem was: {detail}\n\n"
-                "Rephrasing it more specifically usually helps — naming the "
+                "Rephrasing it more specifically usually helps: naming the "
                 "time period, the product category, or the metric you want."
             ),
             "degraded": True,

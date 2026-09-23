@@ -1,21 +1,14 @@
 """Runtime-editable agent personas (requirement 8).
 
-The CEO wants to change the tone of reports weekly, and that must not need a
-deployment.  So the persona is data, not code: a YAML file read at the start of
-every turn, with the file's modification time as the cache key.  Editing a file
-changes the next answer.
+Tone must change weekly without a deployment, so the persona is data: a YAML
+file read at the start of every turn, keyed on modification time.
 
-The read is defensive in three ways, because a non-developer is editing it:
+The read is defensive, because a non-developer is editing it. A malformed
+file keeps the last good version in service, an unknown name falls back to
+the default, and numeric fields are clamped.
 
-* a malformed file never takes the agent down — the previous good version
-  stays in service and the problem is logged;
-* an unknown persona name falls back to the default rather than erroring;
-* the loaded values are inserted as *content*, never as instructions that can
-  redefine the agent's constraints.  A persona controls tone, length and shape.
-  It cannot switch off PII masking, because the guard is not in the prompt.
-
-In production this file lives in Cloud Storage or Firestore with versioning and
-a small review step; the loader interface does not change.
+A persona controls tone, length and shape. It cannot switch off PII masking,
+because the guard is not in the prompt.
 """
 
 from __future__ import annotations
